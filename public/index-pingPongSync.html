@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.msgpack.min.js"></script>
+    <script type="module">
+      // 192.168.178.35
+      import { io as defaultIo } from "https://cdn.socket.io/4.5.4/socket.io.esm.min.js";
+      // const host = "192.168.178.35";
+      const host = "192.168.0.193";
+      let params = new URL(document.location).searchParams;
+
+      let socket;
+      if (params.get("parser") === "msgpack") {
+        socket = io(`http://${host}:3001`);
+      } else {
+        if (params.get("server") === "deno") {
+          socket = defaultIo(`http://${host}:3002`);
+        } else {
+          socket = defaultIo(`http://${host}:3003`);
+        }
+      }
+      function pong(data) {
+        socket.emit("myPong", data);
+      }
+      socket.on("connect", function (data) {
+        addMessage("connected");
+      });
+      socket.on("myPing", function (data) {
+        // console.log(data)
+        // addMessage(JSON.stringify(data));
+        pong(data);
+      });
+      socket.on("time", function (data) {
+        addMessage(data.time);
+      });
+      socket.on("error", console.error.bind(console));
+      socket.on("message", console.log.bind(console));
+      socket.on("disconnect", (event) => {
+        console.log("disconnect", event);
+        // location.reload()
+      });
+
+      function addMessage(message) {
+        const text = document.createTextNode(message),
+          el = document.createElement("li"),
+          messages = document.getElementById("messages");
+
+        el.appendChild(text);
+        messages.appendChild(el);
+      }
+    </script>
+  </head>
+  <body>
+    <ul id="messages"></ul>
+  </body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script>
+      function addMessage(message) {
+        const text = document.createTextNode(message),
+          el = document.createElement("li"),
+          messages = document.getElementById("messages");
+
+        el.appendChild(text);
+        messages.appendChild(el);
+      }
+
+      const handData = {
+        position: [123.352313, 45.13412, 0.12412],
+        rotation: [6.098435762, 7.67363345, 1.1984673],
+        scale: [7.1356354324, 1.153376234, 4.13567898],
+        objectId: "my-object-id",
+      };
+      const params = new URL(document.location).searchParams;
+      const id = params.get("id");
+      let otherIds = params.getAll("otherId");
+      if (id === "bob") {
+        otherIds = [
+          "alice",
+          // 'alicee',
+          // 'aliceee',
+          // 'aliceeee',
+          // 'aliceeeee',
+          // 'aliceeeeee',
+          // 'aliceeeeeee',
+          // 'aliceeeeeeee',
+          // 'aliceeeeeeeee',
+          // 'aliceeeeeeeeee',
+          // 'aliceeeeeeeeeee',
+          // 'aliceeeeeeeeeeee',
+          // 'aliceeeeeeeeeeeee',
+          // 'aliceeeeeeeeeeeeee',
+          // 'aliceeeeeeeeeeeeeee',
+        ];
+      }
+      if (!id || !otherIds) {
+        alert("id not defined");
+      }
+      handData.id = id;
+      console.log({ id, otherIds });
+
+      // const ids = Array(3)
+      //   .fill(null)
+      //   .reduce((agg, curr, index) => {
+      //     if (index > 0 && index !== parseInt(id)) {
+      //       agg.push(index);
+      //     }
+      //     return agg;
+      //   }, []);
+
+      const peer = new Peer(id, {
+        host: location.hostname,
+        port: 9000,
+        debug: 3,
+        path: "/myapp",
+      });
+      peer.on("error", console.log);
+      peer.on("close", console.log);
+      console.log(peer);
+      console.log("connecting", otherIds);
+      // dataConnection.on("data", (data) => {
+      //   console.log(data);
+      // });
+      // dataConnection.on("open", () => {
+      //   dataConnection.send(`hi ${otherId}!`);
+      // });
+
+      if (id === "bob") {
+        // log receive
+        let recievedData = 0;
+        let currData = null;
+        setInterval(() => {
+          console.log("recieved handData", recievedData, currData);
+          recievedData = 0;
+          addMessage(currData.time)
+        }, 1000);
+        otherIds.forEach((otherId) => {
+          const dataConnection = peer.connect(otherId, {
+            serialization: "json",
+            reliable: true,
+          });
+          dataConnection.on("close", () => {
+            console.log("closed");
+          });
+          dataConnection.on("error", (err) => {
+            console.log("error", err);
+          });
+          dataConnection.on("data", (data) => {
+            recievedData++;
+            currData = data;
+            // console.log("new data from", data.id);
+          });
+          dataConnection.on("open", () => {
+            console.log("bobs opened!");
+            // const step = () => {
+            //   if (dataConnection._open) {
+            //     dataConnection.send(handData);
+            //     requestAnimationFrame(step);
+            //   }
+            // };
+            // requestAnimationFrame(step);
+          });
+        });
+      } else {
+        peer.on("connection", (dataConnection) => {
+          console.log({ dataConnection });
+          dataConnection.on("close", () => {
+            console.log("closed");
+          });
+          dataConnection.on("error", (err) => {
+            console.log("error", err);
+          });
+          // log receive
+          dataConnection.on("data", (data) => {
+            // console.log("new data from", data.id);
+          });
+          dataConnection.on("open", () => {
+            const step = () => {
+              if (dataConnection._open === true) {
+                handData.time = Date.now();
+                // console.log("sending");
+                dataConnection.send(handData);
+                requestAnimationFrame(step);
+              }
+            };
+            requestAnimationFrame(step);
+          });
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <ul id="messages"></ul>
+  </body>
+</html>

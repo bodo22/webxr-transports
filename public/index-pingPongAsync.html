@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <!-- <script src="https://cdn.socket.io/4.5.4/socket.io.msgpack.min.js"></script> -->
+    <script>
+      // 192.168.178.35
+      var socket = io("ws://localhost:3003", {
+        // transports: ["websocket"],
+      });
+      function pong() {
+        socket.volatile.emit("myPong", {
+          position: [123.352313, 45.13412, 0.12412],
+          rotation: [6.098435762, 7.67363345, 1.1984673],
+          scale: [7.1356354324, 1.153376234, 4.13567898],
+          objectId: "my-object-id",
+        });
+      }
+      socket.on("connect", function (data) {
+        addMessage("connected");
+        // socket.io.engine.on("drain", () => {
+        //   console.log('drain');
+        //   pong();
+        // });
+        // setTimeout(() => {
+        //   pong();
+        // }, 500);
+      });
+
+      socket.on("error", console.error.bind(console));
+      socket.on("message", console.log.bind(console));
+      socket.on("disconnect", (event) => {
+        console.log("disconnect", event);
+        // location.reload();
+      });
+
+      function addMessage(message) {
+        var text = document.createTextNode(message),
+          el = document.createElement("li"),
+          messages = document.getElementById("messages");
+
+        el.appendChild(text);
+        messages.appendChild(el);
+      }
+    </script>
+  </head>
+  <body>
+    <ul id="messages"></ul>
+  </body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.msgpack.min.js"></script>
+    <script type="module">
+      // 192.168.178.35
+      import { io as defaultIo } from "https://cdn.socket.io/4.5.4/socket.io.esm.min.js";
+      // const host = "192.168.178.35";
+      const host = "192.168.0.193";
+      let params = new URL(document.location).searchParams;
+
+      let socket;
+      if (params.get("parser") === "msgpack") {
+        socket = io(`http://${host}:3001`);
+      } else {
+        if (params.get("server") === "deno") {
+          socket = defaultIo(`http://${host}:3002`);
+        } else {
+          socket = defaultIo(`http://${host}:3003`);
+        }
+      }
+      const handData = {
+        position: [123.352313, 45.13412, 0.12412],
+        rotation: [6.098435762, 7.67363345, 1.1984673],
+        scale: [7.1356354324, 1.153376234, 4.13567898],
+        objectId: "my-object-id",
+      };
+      socket.on("connect", function (data) {
+        addMessage(`connected ${socket.id}`);
+        handData.socketId = socket.id;
+        const step = () => {
+          socket.emit("handData", handData);
+          if (socket.connected === true) {
+            requestAnimationFrame(step);
+          }
+        };
+        requestAnimationFrame(step);
+      });
+      let recievedData = 0;
+      socket.on("handData", function (data) {
+        recievedData++;
+      });
+      setInterval(() => {
+        console.log("recieved handData", recievedData);
+        recievedData = 0;
+      }, 1000);
+      socket.on("error", console.error.bind(console));
+      socket.on("message", console.log.bind(console));
+      socket.on("disconnect", (event) => {
+        console.log("disconnect", event);
+        // location.reload()
+      });
+
+      function addMessage(message) {
+        const text = document.createTextNode(message),
+          el = document.createElement("li"),
+          messages = document.getElementById("messages");
+
+        el.appendChild(text);
+        messages.appendChild(el);
+      }
+    </script>
+  </head>
+  <body>
+    <ul id="messages"></ul>
+  </body>
+</html>
