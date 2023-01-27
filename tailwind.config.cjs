@@ -1,7 +1,7 @@
 module.exports = {
-  mode: 'jit',
-  content: ['./src/pages/**/*.{js,ts,jsx,tsx}', './src/components/**/*.{js,ts,jsx,tsx}'], // remove unused styles in production
-  darkMode: 'media', // or 'media' or 'class'
+  mode: "jit",
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"], // remove unused styles in production
+  darkMode: "media", // or 'media' or 'class'
   theme: {
     extend: {},
   },
@@ -9,4 +9,4 @@ module.exports = {
     extend: {},
   },
   plugins: [],
-}
+};

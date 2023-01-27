@@ -27,3 +27,5 @@ dist-ssr
 cert.pem
 key.pem
 handData/
+public/handData/
+.cache

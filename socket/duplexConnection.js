@@ -23,7 +23,7 @@ export default class DuplexConnection {
       // openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout key.pem -out cert.pem
       this.server = https.createServer({
         key: fs.readFileSync(path.resolve(__dirname, "key.pem")),
-        cert: fs.readFileSync(path.resolve(__dirname, "cert.pem"))
+        cert: fs.readFileSync(path.resolve(__dirname, "cert.pem")),
       });
     } else {
       this.server = http.createServer(this.app);
@@ -42,7 +42,11 @@ export default class DuplexConnection {
     });
 
     this.server.listen(this.port, () => {
-      console.log(`socket server ${options.parser} listening at :${this.port}, https: ${!!this.options.secure}`);
+      console.log(
+        `socket server ${options.parser} listening at :${
+          this.port
+        }, https: ${!!this.options.secure}`
+      );
     });
 
     const config = {
@@ -56,6 +60,9 @@ export default class DuplexConnection {
       config.parser = this.parser;
     }
     this.io = new Server(this.server, config);
-    this.io.on("connection", options.onConnect.bind(this));
+    this.io.of("/").on("connection", options.onConnect.bind(this));
+    if (options.onAdminConnect) {
+      this.io.of("/admin").on("connection", options.onAdminConnect.bind(this));
+    }
   }
 }

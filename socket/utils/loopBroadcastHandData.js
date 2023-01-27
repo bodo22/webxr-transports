@@ -1,5 +1,35 @@
-import { onDisconnect } from "./pingPongSync.js";
-import json from "../../handData/handData1.json" assert { type: "json" };
+import json from "../../public/handData/handData1.json" assert { type: "json" };
+
+export async function onDisconnect(socket, reason) {
+  console.log(`socket ${socket.id} disconnected`);
+  delete this.sockets[socket.id];
+  broadcastConnectedUsers.call(this);
+}
+
+function broadcastConnectedUsers() {
+  this.io.emit("connectedUsers", Object.keys(this.sockets));
+  this.io.of("/admin").emit("connectedUsers", Object.keys(this.sockets));
+}
+
+export function onAdminConnect(socket) {
+  broadcastConnectedUsers.call(this);
+  socket.on("fakeHandDatas", (fakeHandDatas) => {
+    fakeHandDatas.forEach(({ fakeId, socketId, isFakeHandsClient, handData }, index) => {
+      if (!socketId) {
+        this.io.emit("handData", { userId: fakeId, handData }); // send fakers without connected fake client to all
+      }
+      if (this.sockets[socketId]) {
+        if (isFakeHandsClient) {
+          this.sockets[socketId].to("handRoom").emit("handData", {
+            userId: socketId,
+            handData,
+          });
+        }
+        this.sockets[socketId].emit("privateHandData", handData); // send "self" to fake client
+      }
+    });
+  });
+}
 
 export async function onConnect(socket) {
   console.log(`socket ${socket.id} connected`);
@@ -8,32 +38,13 @@ export async function onConnect(socket) {
   socket.on("message", console.log.bind(console));
 
   this.sockets[socket.id] = socket;
-
+  socket.emit("userId", socket.id)
   socket.join("handRoom");
 
-  let frame = 0;
+  broadcastConnectedUsers.call(this);
 
-  // socket.on("handData", (data) => {
-  //   // console.log(data);
-  //   socket.to("handRoom").emit("handData", data);
-  // });
-
-  if (!this.sendHandDataInterval) {
-    this.sendHandDataInterval = setInterval(() => {
-      const data = {
-        left: json[frame].left,
-        right: json[frame].right,
-        time: Date.now(),
-      };
-      // console.log(data);
-      this.io.in("handRoom").emit("handData", data);
-      // this.io.in("handRoom").emit("handData", 'hello');
-      frame++;
-      if (frame > json.length - 1) {
-        frame = 0;
-      }
-    }, 50);
-  }
-
-  // startInterval.call(this, socket);
+  socket.on("handData", (data) => {
+    socket.to("handRoom").emit("handData", data);
+  });
+  
 }
