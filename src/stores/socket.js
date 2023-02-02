@@ -10,7 +10,7 @@ function readArrayItem(array, index) {
   return arrayItem;
 }
 
-function getConnectedFakeUsers(connectedUsers) {
+export function getConnectedFakeUsers(connectedUsers) {
   return connectedUsers.filter(({ isSessionSupported }) => !isSessionSupported);
 }
 

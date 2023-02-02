@@ -7,7 +7,7 @@ import Slider from "@mui/material/Slider";
 import PowerIcon from "@mui/icons-material/Power";
 import PowerOffIcon from "@mui/icons-material/PowerOff";
 
-import useSocket, { variants } from "@/stores/socket";
+import useSocket, { variants, getConnectedFakeUsers } from "@/stores/socket";
 import PieCircle from "@/components/PieCircle";
 
 function TabPanel(props) {
@@ -73,7 +73,7 @@ export default function BasicTabs() {
             { value: 5, label: 5 },
             { value: 6, label: 6 },
           ]}
-          min={connectedUsers.length}
+          min={getConnectedFakeUsers(connectedUsers).length}
           max={6}
           value={fakeUsers}
           onChange={setFakeUsers}
