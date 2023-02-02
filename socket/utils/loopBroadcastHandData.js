@@ -10,7 +10,7 @@ function broadcastConnectedUsers() {
   const connectedUsers = Object.values(this.sockets).map((socket) => {
     return {
       socketId: socket.id,
-      isSessionSupported: socket.handshake.query.isSessionSupported,
+      isSessionSupported: socket.handshake.query.isSessionSupported === "true",
     };
   });
   this.io.emit("connectedUsers", connectedUsers);
@@ -20,19 +20,10 @@ function broadcastConnectedUsers() {
 export function onAdminConnect(socket) {
   broadcastConnectedUsers.call(this);
   socket.on("fakeHandDatas", (fakeHandDatas) => {
-    fakeHandDatas.forEach(
-      ({ fakeId, socketId, isSessionSupported, handData }, index) => {
-        const clientSocket = this.sockets[socketId];
-        if (!socketId) {
-          this.io.to("handRoom").emit("handData", { userId: fakeId, handData }); // send fakers without connected fake client to all
-        } else if (clientSocket && isSessionSupported) {
-          clientSocket
-            .to("handRoom")
-            .emit("handData", { userId: socketId, handData });
-          clientSocket.emit("handData", { userId: socketId, handData }); // send "self" to non session-supporting client
-        }
-      }
-    );
+    fakeHandDatas.forEach((data) => {
+      // send data for fake clients & clients that don't support WebXR sessions
+      this.io.to("handRoom").emit("handData", data);
+    });
   });
 }
 

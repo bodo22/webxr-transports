@@ -35,10 +35,10 @@ const mutations = (set, get) => {
     })
     .on("connectedUsers", (connectedUsers) => {
       let fakeUsers = get().fakeUsers;
-      const connectedFakeUsers = getConnectedFakeUsers();
+      const connectedFakeUsers = getConnectedFakeUsers(connectedUsers);
       if (connectedFakeUsers.length > fakeUsers) {
-        // to make sure every connected user gets a unique handData
-        fakeUsers = connectedUsers.length;
+        // to make sure every connected fake user gets a unique handData
+        fakeUsers = connectedFakeUsers.length;
       }
       set({ connectedUsers, fakeUsers });
     });
@@ -100,11 +100,10 @@ const useSocket = create(
   (curr, prev) => {
     if (curr.socketReady && curr.handData && curr.connectedUsers) {
       let frame = 0;
-      const { fakeUsers, socket, handData } = useSocket.getState();
+      const { fakeUsers, socket, connectedUsers, handData } =
+        useSocket.getState();
+      const connectedFakeUsers = getConnectedFakeUsers(connectedUsers);
       const rafCallback = () => {
-        // console.log("hello", curr.connectedUsers);
-        const connectedFakeUsers = getConnectedFakeUsers();
-
         const fakeHandDatas = new Array(fakeUsers)
           .fill()
           .reduce((prev, _, index) => {
@@ -118,8 +117,7 @@ const useSocket = create(
               time: Date.now(),
             };
             prev.push({
-              ...connectedFakeUser,
-              fakeId: index,
+              userId: connectedFakeUser?.socketId ?? index,
               handData: newHandData,
             });
             return prev;
