@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { combine, subscribeWithSelector } from "zustand/middleware";
 import { shallow } from "zustand/shallow";
-import io from "socket.io-client";
+import socket from "./socketConnection";
 
 export const variants = ["Ego", "Distributed"];
 
@@ -24,8 +24,6 @@ const initialState = {
 };
 
 const mutations = (set, get) => {
-  const socket = io("/admin");
-
   socket
     .on("connect", () => {
       set({ socket, socketReady: true });
@@ -114,9 +112,9 @@ const useSocket = create(
             const newHandData = {
               left: userFrameHandData.left,
               right: userFrameHandData.right,
-              time: Date.now(),
             };
             prev.push({
+              time: Date.now(),
               userId: connectedFakeUser?.socketId ?? index,
               handData: newHandData,
             });
