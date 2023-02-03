@@ -3,27 +3,71 @@ import { combine, subscribeWithSelector } from "zustand/middleware";
 import { shallow } from "zustand/shallow";
 import socket from "./socketConnection";
 
-export const variants = ["Ego", "Distributed"];
+export const variants = ["Ego", "Pizza"];
 
 function readArrayItem(array, index) {
   let arrayItem = array[index % array.length];
   return arrayItem;
 }
 
-export function getConnectedFakeUsers(connectedUsers) {
-  return connectedUsers.filter(({ isSessionSupported }) => !isSessionSupported);
+function getInlineUsers(users) {
+  return users.filter(
+    ({ isSessionSupported, socketId }) => !isSessionSupported && socketId
+  );
+}
+
+function getXRUsers(users) {
+  return users.filter(({ isSessionSupported }) => isSessionSupported);
+}
+
+function getConnectedUsers(users) {
+  return users.filter(({ socketId }) => !!socketId);
+}
+
+function getFakeUsers(users) {
+  return users.filter(({ socketId }) => !socketId);
 }
 
 const initialState = {
   socketReady: false,
   variant: variants[0],
-  connectedUsers: [],
-  fakeUsers: 0,
+  users: [],
   handData: undefined,
   socket: undefined,
 };
 
 const mutations = (set, get) => {
+  function updateConnectedUsers(connectedUsers) {
+    const oldUsers = get().users;
+    const newConnectedUsers = connectedUsers.filter(
+      ({ socketId }) =>
+        !oldUsers.map(({ socketId }) => socketId).includes(socketId)
+    );
+    const newOldConnectedUsers = oldUsers.reduce((prev, oldUser) => {
+      const user = connectedUsers.find(
+        ({ socketId }) => socketId === oldUser.socketId
+      );
+      if (user) {
+        prev.push(user);
+      }
+      return prev;
+    }, []);
+    const oldFakeUsers = getFakeUsers(oldUsers);
+    const newUsers = newOldConnectedUsers.concat(
+      newConnectedUsers,
+      oldFakeUsers
+    );
+    set({ users: [...newUsers] });
+  }
+
+  function updateFakeUsers(numFakeUsers) {
+    const oldUsers = get().users;
+    const oldConnectedUsers = getConnectedUsers(oldUsers);
+    const newFakeUsers = new Array(numFakeUsers).fill(null).map(() => ({}));
+    const newUsers = oldConnectedUsers.concat(newFakeUsers);
+    set({ users: [...newUsers] });
+  }
+
   socket
     .on("connect", () => {
       set({ socket, socketReady: true });
@@ -31,15 +75,7 @@ const mutations = (set, get) => {
     .on("disconnect", () => {
       set({ socketReady: false });
     })
-    .on("connectedUsers", (connectedUsers) => {
-      let fakeUsers = get().fakeUsers;
-      const connectedFakeUsers = getConnectedFakeUsers(connectedUsers);
-      if (connectedFakeUsers.length > fakeUsers) {
-        // to make sure every connected fake user gets a unique handData
-        fakeUsers = connectedFakeUsers.length;
-      }
-      set({ connectedUsers, fakeUsers });
-    });
+    .on("connectedUsers", updateConnectedUsers);
 
   fetch("./handData/handData1.json")
     .then((response) => response.json())
@@ -59,7 +95,7 @@ const mutations = (set, get) => {
 
   return {
     setFakeUsers(event, newFakeUsers) {
-      set({ fakeUsers: newFakeUsers });
+      updateFakeUsers(newFakeUsers);
     },
     setVariant(event, newVariantIndex) {
       const newVariant = variants[newVariantIndex];
@@ -69,9 +105,9 @@ const mutations = (set, get) => {
           socket.emit("HandViewChange", { type: "Ego" });
           break;
         }
-        case "Distributed": {
+        case "Pizza": {
           // TODO recalc all rotation offsets for all users.
-          socket.emit("HandViewChange", { type: "Ego" });
+          socket.emit("HandViewChange", { type: "Pizza" });
           break;
         }
         default: {
@@ -90,22 +126,17 @@ const useSocket = create(
   (state) => ({
     socketReady: state.socketReady,
     handData: state.handData?.length,
-    connectedUsers: state.connectedUsers
-      .map(({ socketId }) => socketId)
-      .join(" "),
-    fakeUsers: state.fakeUsers,
+    usersLength: state.users.length,
   }),
   (curr, prev) => {
-    if (curr.socketReady && curr.handData && curr.connectedUsers) {
+    if (curr.socketReady && curr.handData && curr.usersLength) {
       let frame = 0;
-      const { fakeUsers, socket, connectedUsers, handData } =
-        useSocket.getState();
-      const connectedFakeUsers = getConnectedFakeUsers(connectedUsers);
+      const { users, socket, handData } = useSocket.getState();
+      const inlineUsers = getInlineUsers(users);
+      const fakeUsers = getFakeUsers(users);
       const rafCallback = () => {
-        const fakeHandDatas = new Array(fakeUsers)
-          .fill()
-          .reduce((prev, _, index) => {
-            const connectedFakeUser = connectedFakeUsers[index];
+        const fakeHandDatas = [...inlineUsers, ...fakeUsers].reduce(
+          (prev, user, index) => {
             const frameOffset = index * 20;
             const userFrame = frame + frameOffset;
             const userFrameHandData = readArrayItem(handData, userFrame);
@@ -115,11 +146,13 @@ const useSocket = create(
             };
             prev.push({
               time: Date.now(),
-              userId: connectedFakeUser?.socketId ?? index,
+              userId: user?.socketId ?? index,
               handData: newHandData,
             });
             return prev;
-          }, []);
+          },
+          []
+        );
         socket.emit("fakeHandDatas", fakeHandDatas);
         frame++;
       };
@@ -128,5 +161,22 @@ const useSocket = create(
   },
   { equalityFn: shallow }
 );
+
+export function useInlineUsers() {
+  const users = useSocket(({ users }) => users);
+  return getInlineUsers(users);
+}
+export function useXRUsers() {
+  const users = useSocket(({ users }) => users);
+  return getXRUsers(users);
+}
+export function useConnectedUsers() {
+  const users = useSocket(({ users }) => users);
+  return getConnectedUsers(users);
+}
+export function useFakeUsers() {
+  const users = useSocket(({ users }) => users);
+  return getFakeUsers(users);
+}
 
 export default useSocket;

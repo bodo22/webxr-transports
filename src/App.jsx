@@ -7,8 +7,14 @@ import Slider from "@mui/material/Slider";
 import PowerIcon from "@mui/icons-material/Power";
 import PowerOffIcon from "@mui/icons-material/PowerOff";
 
-import useSocket, { variants, getConnectedFakeUsers } from "@/stores/socket";
-import PieCircle from "@/components/PieCircle";
+import useSocket, {
+  variants,
+  useConnectedUsers,
+  useFakeUsers,
+  useInlineUsers,
+  useXRUsers,
+} from "@/stores/socket";
+import Pizza from "@/components/Pizza";
 
 function TabPanel(props) {
   const { children, value, index } = props;
@@ -34,18 +40,19 @@ export default function BasicTabs() {
   const socketReady = useSocket((state) => state.socketReady);
   const variant = useSocket((state) => state.variant);
   const setVariant = useSocket((state) => state.setVariant);
-  const connectedUsers = useSocket((state) => state.connectedUsers);
-  const fakeUsers = useSocket((state) => state.fakeUsers);
+  const connectedUsers = useConnectedUsers();
+  const fakeUsers = useFakeUsers();
+  const inlineUsers = useInlineUsers();
+  const xrUsers = useXRUsers();
+  const users = useSocket((state) => state.users);
   const setFakeUsers = useSocket((state) => state.setFakeUsers);
 
   const variantIndex = variants.findIndex((v) => v === variant);
-  const filter = variant !== "Distributed" ? "grayscale" : "";
+  const filter = variant !== "Pizza" ? "grayscale" : "";
 
   return (
     <Box sx={{ width: "100%" }}>
-      Connected Users: {connectedUsers.length}
-      <br />
-      Fake Users: {fakeUsers}
+      Users: {users.length} ({connectedUsers.length} connected ({xrUsers.length} XR, {inlineUsers.length} inline), {fakeUsers.length} fake)
       <br />
       Socket connection state:{" "}
       {socketReady ? (
@@ -66,6 +73,7 @@ export default function BasicTabs() {
           step={1}
           track={false}
           marks={[
+            { value: 0, label: 0 },
             { value: 1, label: 1 },
             { value: 2, label: 2 },
             { value: 3, label: 3 },
@@ -73,19 +81,12 @@ export default function BasicTabs() {
             { value: 5, label: 5 },
             { value: 6, label: 6 },
           ]}
-          min={getConnectedFakeUsers(connectedUsers).length}
+          min={0}
           max={6}
-          value={fakeUsers}
+          value={fakeUsers.length}
           onChange={setFakeUsers}
         />
-        <PieCircle
-          slices={[
-            { percentage: 0.25, color: "blue" },
-            { percentage: 0.25, color: "red" },
-            { percentage: 0.25, color: "blue" },
-            { percentage: 0.25, color: "red" },
-          ]}
-        />
+        <Pizza />
       </div>
     </Box>
   );

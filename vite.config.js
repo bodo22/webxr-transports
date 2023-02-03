@@ -45,6 +45,8 @@ const cache = Cache.default({
   // ns: "my-namespace", // Optional. A grouping namespace for items.
 });
 
+// for 443 port: https://stackoverflow.com/a/23281417
+
 // https://vitejs.dev/config/
 export default defineConfig(async () => {
   let cert = await cache.get("cert");

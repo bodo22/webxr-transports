@@ -1,6 +1,16 @@
 import React from "react";
+import useSocket from "@/stores/socket";
 
-export default function PieCircle({ slices }) {
+export default function Pizza() {
+  const users = useSocket((state) => state.users);
+
+  const slices = users.map((_, index) => {
+    return {
+      percentage: 1 / users.length,
+      color: index % 2 ? "blue" : "red",
+    };
+  });
+
   let totalPercentage = 0;
 
   const getCoordinatesForPercent = () => {
