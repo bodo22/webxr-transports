@@ -1,9 +1,13 @@
 import { create } from "zustand";
 import { combine, subscribeWithSelector } from "zustand/middleware";
 import { shallow } from "zustand/shallow";
+// import { Poline } from "poline";
+// import { formatHex, converter } from "culori";
 import socket from "./socketConnection";
 
 export const variants = ["Ego", "Pizza"];
+
+// const rgb = converter("rgb");
 
 function readArrayItem(array, index) {
   let arrayItem = array[index % array.length];
@@ -36,7 +40,41 @@ const initialState = {
   socket: undefined,
 };
 
+// based on https://sashamaps.net/docs/resources/20-colors/
+const convenientColors = [
+  { r: 255 / 255, g: 225 / 255, b: 25 / 255 },
+  { r: 0 / 255, g: 130 / 255, b: 200 / 255 },
+  { r: 245 / 255, g: 130 / 255, b: 48 / 255 },
+  { r: 220 / 255, g: 190 / 255, b: 255 / 255 },
+  { r: 128 / 255, g: 0 / 255, b: 0 / 255 },
+  { r: 0 / 255, g: 0 / 255, b: 128 / 255 },
+  { r: 128 / 255, g: 128 / 255, b: 128 / 255 },
+  { r: 255 / 255, g: 255 / 255, b: 255 / 255 },
+  { r: 0 / 255, g: 0 / 255, b: 0 / 255 },
+];
+
 const mutations = (set, get) => {
+  function setUsers(users) {
+    // const poline = new Poline({
+    //   numPoints: users.length,
+    // });
+    const newUsers = users.map((user, index) => {
+      return {
+        // color: rgb(
+        //   formatHex({
+        //     mode: "okhsl",
+        //     h: poline.colors[index][0],
+        //     s: poline.colors[index][1],
+        //     l: poline.colors[index][2],
+        //   })
+        // ),
+        color: convenientColors[index],
+        ...user,
+      };
+    });
+    set({ users: newUsers });
+  }
+
   function updateConnectedUsers(connectedUsers) {
     const oldUsers = get().users;
     const newConnectedUsers = connectedUsers.filter(
@@ -57,7 +95,7 @@ const mutations = (set, get) => {
       newConnectedUsers,
       oldFakeUsers
     );
-    set({ users: [...newUsers] });
+    setUsers(newUsers);
   }
 
   function updateFakeUsers(numFakeUsers) {
@@ -65,7 +103,7 @@ const mutations = (set, get) => {
     const oldConnectedUsers = getConnectedUsers(oldUsers);
     const newFakeUsers = new Array(numFakeUsers).fill(null).map(() => ({}));
     const newUsers = oldConnectedUsers.concat(newFakeUsers);
-    set({ users: [...newUsers] });
+    setUsers(newUsers);
   }
 
   socket
@@ -145,6 +183,7 @@ const useSocket = create(
               right: userFrameHandData.right,
             };
             prev.push({
+              ...user,
               time: Date.now(),
               userId: user?.socketId ?? index,
               handData: newHandData,
