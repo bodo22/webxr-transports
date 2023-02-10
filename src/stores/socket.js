@@ -4,8 +4,9 @@ import { shallow } from "zustand/shallow";
 // import { Poline } from "poline";
 // import { formatHex, converter } from "culori";
 import socket from "./socketConnection";
+import shortUuid from "short-uuid";
 
-export const variants = ["Ego", "Pizza"];
+export const handViews = ["Ego", "Pizza"];
 
 // const rgb = converter("rgb");
 
@@ -34,7 +35,7 @@ function getFakeUsers(users) {
 
 const initialState = {
   socketReady: false,
-  variant: variants[0],
+  handView: handViews[0],
   users: [],
   handData: undefined,
   socket: undefined,
@@ -73,6 +74,7 @@ const mutations = (set, get) => {
       };
     });
     set({ users: newUsers });
+    socket.emit("handViewChange", { type: get().handView });
   }
 
   function updateConnectedUsers(connectedUsers) {
@@ -101,7 +103,9 @@ const mutations = (set, get) => {
   function updateFakeUsers(numFakeUsers) {
     const oldUsers = get().users;
     const oldConnectedUsers = getConnectedUsers(oldUsers);
-    const newFakeUsers = new Array(numFakeUsers).fill(null).map(() => ({}));
+    const newFakeUsers = new Array(numFakeUsers)
+      .fill(null)
+      .map(() => ({ userId: shortUuid.generate() }));
     const newUsers = oldConnectedUsers.concat(newFakeUsers);
     setUsers(newUsers);
   }
@@ -135,23 +139,10 @@ const mutations = (set, get) => {
     setFakeUsers(event, newFakeUsers) {
       updateFakeUsers(newFakeUsers);
     },
-    setVariant(event, newVariantIndex) {
-      const newVariant = variants[newVariantIndex];
-      set({ variant: newVariant });
-      switch (newVariant) {
-        case "Ego": {
-          socket.emit("HandViewChange", { type: "Ego" });
-          break;
-        }
-        case "Pizza": {
-          // TODO recalc all rotation offsets for all users.
-          socket.emit("HandViewChange", { type: "Pizza" });
-          break;
-        }
-        default: {
-          break;
-        }
-      }
+    sethandView(event, newVariantIndex) {
+      const newVariant = handViews[newVariantIndex];
+      set({ handView: newVariant });
+      socket.emit("handViewChange", { type: newVariant });
     },
   };
 };
@@ -170,31 +161,29 @@ const useSocket = create(
     if (curr.socketReady && curr.handData && curr.usersLength) {
       let frame = 0;
       const { users, socket, handData } = useSocket.getState();
-      const inlineUsers = getInlineUsers(users);
-      const fakeUsers = getFakeUsers(users);
       const rafCallback = () => {
-        const fakeHandDatas = [...inlineUsers, ...fakeUsers].reduce(
-          (prev, user, index) => {
-            const frameOffset = index * 20;
-            const userFrame = frame + frameOffset;
-            const userFrameHandData = readArrayItem(handData, userFrame);
-            const newHandData = {
-              left: userFrameHandData.left,
-              right: userFrameHandData.right,
-            };
-            prev.push({
-              ...user,
-              time: Date.now(),
-              userId: user?.socketId ?? index,
-              handData: newHandData,
-            });
-            return prev;
-          },
-          []
-        );
+        const fakeHandDatas = users.reduce((prev, user, index) => {
+          if (user.isSessionSupported) {
+            return prev; // this user will be generating their own hand data
+          }
+          const frameOffset = index * 20;
+          const userFrame = frame + frameOffset;
+          const userFrameHandData = readArrayItem(handData, userFrame);
+          const newHandData = {
+            left: userFrameHandData.left,
+            right: userFrameHandData.right,
+          };
+          prev.push({
+            ...user,
+            time: Date.now(),
+            handData: newHandData,
+          });
+          return prev;
+        }, []);
         socket.emit("fakeHandDatas", fakeHandDatas);
         frame++;
       };
+      socket.emit("userUpdate", users);
       useSocket.setState({ ready: true, rafCallback });
     }
   },

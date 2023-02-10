@@ -3,27 +3,41 @@ import useSocket from "@/stores/socket";
 import * as d3 from "d3";
 import { formatRgb } from "culori";
 
-// based on 
+// based on
 // https://wattenberger.com/blog/react-and-d3
 // https://d3-graph-gallery.com/graph/pie_annotation.html
 
-const width = 1000,
-  height = 1000,
+function startAngle(d) {
+  // d.startAngle + Math.PI makes the first arc's start at 6 O'Clock
+  // / d.data.length * (d.data.length - 1) puts the first arc's center at 6 O'Clock
+  return d.startAngle + (Math.PI / d.data.length) * (d.data.length - 1);
+}
+function endAngle(d) {
+  return d.endAngle + (Math.PI / d.data.length) * (d.data.length - 1);
+}
+
+const width = 500,
+  height = width,
   margin = 40;
 const radius = Math.min(width, height) / 2 - margin;
-const arcGenerator = d3.arc().innerRadius(0).outerRadius(radius);
-const labelRadius = 0 * 0.2 + radius * 0.8;
-const arcGeneratorLabel = d3.arc().innerRadius(labelRadius).outerRadius(labelRadius);
+const arcGenerator = d3
+  .arc()
+  .innerRadius(width / 8)
+  .outerRadius(radius)
+  .startAngle(startAngle)
+  .endAngle(endAngle);
 
 export default function Pizza() {
   const users = useSocket((state) => state.users);
-  const slices = d3.pie().value(() => users.length)(users);
+  const slices = d3.pie().value(() => users.length)(
+    users.map((user) => ({ ...user, length: users.length }))
+  );
 
   return (
     <div style={{ alignItems: "center", justifyContent: "center" }}>
       <svg width={width} height={height}>
         <g transform={`translate(${width / 2}, ${height / 2})`}>
-          {slices.map((d, index) => {
+          {slices.map((d) => {
             return (
               <>
                 <path
@@ -34,11 +48,11 @@ export default function Pizza() {
                   opacity="0.7"
                 />
                 <text
-                  transform={`translate(${arcGeneratorLabel.centroid(d)})`}
+                  transform={`translate(${arcGenerator.centroid(d)})`}
                   textAnchor="middle"
-                  fontSize={17}
+                  fontSize={12}
                 >
-                  {d.data.socketId || index}
+                  {d.data.userId}
                 </text>
               </>
             );

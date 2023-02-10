@@ -10,6 +10,7 @@ function broadcastConnectedUsers() {
   const connectedUsers = Object.values(this.sockets).map((socket) => {
     return {
       socketId: socket.id,
+      userId: socket.id,
       isSessionSupported: socket.handshake.query.isSessionSupported === "true",
     };
   });
@@ -24,6 +25,12 @@ export function onAdminConnect(socket) {
       // send data for fake clients & clients that don't support WebXR sessions
       this.io.to("handRoom").emit("handData", data);
     });
+  });
+  socket.on("userUpdate", (users) => {
+    this.io.to("handRoom").emit("userUpdate", users);
+  });
+  socket.on("handViewChange", (event) => {
+    this.io.to("handRoom").emit("handViewChange", event);
   });
 }
 

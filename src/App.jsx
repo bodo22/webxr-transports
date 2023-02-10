@@ -8,7 +8,7 @@ import PowerIcon from "@mui/icons-material/Power";
 import PowerOffIcon from "@mui/icons-material/PowerOff";
 
 import useSocket, {
-  variants,
+  handViews,
   useConnectedUsers,
   useFakeUsers,
   useInlineUsers,
@@ -38,8 +38,8 @@ TabPanel.propTypes = {
 
 export default function BasicTabs() {
   const socketReady = useSocket((state) => state.socketReady);
-  const variant = useSocket((state) => state.variant);
-  const setVariant = useSocket((state) => state.setVariant);
+  const handView = useSocket((state) => state.handView);
+  const sethandView = useSocket((state) => state.sethandView);
   const connectedUsers = useConnectedUsers();
   const fakeUsers = useFakeUsers();
   const inlineUsers = useInlineUsers();
@@ -47,8 +47,8 @@ export default function BasicTabs() {
   const users = useSocket((state) => state.users);
   const setFakeUsers = useSocket((state) => state.setFakeUsers);
 
-  const variantIndex = variants.findIndex((v) => v === variant);
-  const filter = variant !== "Pizza" ? "grayscale" : "";
+  const variantIndex = handViews.findIndex((v) => v === handView);
+  const filter = handView !== "Pizza" ? "grayscale" : "";
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -61,8 +61,8 @@ export default function BasicTabs() {
         <PowerOffIcon color="error" />
       )}
       <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-        <Tabs value={variantIndex} onChange={setVariant}>
-          {variants.map((v) => {
+        <Tabs value={variantIndex} onChange={sethandView}>
+          {handViews.map((v) => {
             return <Tab label={v} key={`tab-${v}`} />;
           })}
         </Tabs>
