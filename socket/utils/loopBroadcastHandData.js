@@ -27,6 +27,7 @@ export function onAdminConnect(socket) {
     });
   });
   socket.on("userUpdate", (users) => {
+    socket.emit("userId", socket.id);
     this.io.to("handRoom").emit("userUpdate", users);
   });
   socket.on("handViewChange", (event) => {
