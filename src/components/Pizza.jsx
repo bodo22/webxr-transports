@@ -38,6 +38,11 @@ export default function Pizza() {
       <svg width={width} height={height}>
         <g transform={`translate(${width / 2}, ${height / 2})`}>
           {slices.map((d) => {
+            let type = d.data.isSessionSupported
+              ? "XR"
+              : d.data.socketId
+              ? "inline"
+              : "fake";
             return (
               <>
                 <path
@@ -52,7 +57,12 @@ export default function Pizza() {
                   textAnchor="middle"
                   fontSize={12}
                 >
-                  {d.data.userId}
+                  <tspan fontSize={25}>
+                    {type}
+                  </tspan>
+                  <tspan x="0" dy="1.2em">
+                    (id: {d.data.userId})
+                  </tspan>
                 </text>
               </>
             );
