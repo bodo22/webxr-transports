@@ -74,6 +74,7 @@ const mutations = (set, get) => {
       };
     });
     set({ users: newUsers });
+    socket.emit("userUpdate", newUsers);
     socket.emit("handViewChange", { type: get().handView });
   }
 
@@ -136,6 +137,7 @@ const mutations = (set, get) => {
   window.requestAnimationFrame(step);
 
   return {
+    setUsers,
     setFakeUsers(event, newFakeUsers) {
       updateFakeUsers(newFakeUsers);
     },
@@ -154,11 +156,11 @@ const useSocket = create(
 /* const unsub = */ useSocket.subscribe(
   (state) => ({
     socketReady: state.socketReady,
-    handData: state.handData?.length,
-    usersLength: state.users.length,
+    handDataLength: state.handData?.length,
+    userIdsJoined: state.users.map(({userId})=> userId).join(''),
   }),
   (curr, prev) => {
-    if (curr.socketReady && curr.handData && curr.usersLength) {
+    if (curr.socketReady && curr.handDataLength && curr.userIdsJoined) {
       let frame = 0;
       const { users, socket, handData } = useSocket.getState();
       const rafCallback = () => {
@@ -183,7 +185,6 @@ const useSocket = create(
         socket.emit("fakeHandDatas", fakeHandDatas);
         frame++;
       };
-      socket.emit("userUpdate", users);
       useSocket.setState({ ready: true, rafCallback });
     }
   },
