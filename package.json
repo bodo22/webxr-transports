@@ -23,11 +23,12 @@
     "cors": "^2.8.5",
     "culori": "^2.0.4",
     "d3": "^7.8.2",
+    "d3-drag": "^3.0.0",
     "express": "^4.18.2",
     "peer": "^0.6.1",
     "peerjs": "^1.4.7",
     "playwright": "^1.29.1",
-    "poline": "^0.4.0",
+    "poline": "^0.5.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "send": "^0.18.0",
@@ -60,6 +61,6 @@
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.7",
-    "utf-8-validate": "^5.0.10"
+    "utf-8-validate": "^6.0.2"
   }
 }
