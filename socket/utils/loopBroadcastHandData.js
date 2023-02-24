@@ -50,4 +50,9 @@ export async function onConnect(socket) {
   socket.on("handData", (data) => {
     socket.to("handRoom").emit("handData", data);
   });
+
+  socket.on("pinchData", (data) => {
+    socket.to("handRoom").emit("pinchData", data);
+    // this.io.to("handRoom").emit("pinchData", data);
+  });
 }
