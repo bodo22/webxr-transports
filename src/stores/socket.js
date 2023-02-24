@@ -5,6 +5,7 @@ import { shallow } from "zustand/shallow";
 // import { formatHex, converter } from "culori";
 import socket from "./socketConnection";
 import shortUuid from "short-uuid";
+import throttle from "lodash.throttle";
 
 export const handViews = ["Ego", "Pizza"];
 
@@ -157,13 +158,19 @@ const useSocket = create(
   (state) => ({
     socketReady: state.socketReady,
     handDataLength: state.handData?.length,
-    userIdsJoined: state.users.map(({userId})=> userId).join(''),
+    userIdsJoined: state.users.map(({ userId }) => userId).join(""),
   }),
   (curr, prev) => {
     if (curr.socketReady && curr.handDataLength && curr.userIdsJoined) {
       let frame = 0;
       const { users, socket, handData } = useSocket.getState();
-      const rafCallback = () => {
+      const fps = 30;
+      const wait = 1000 / fps;
+      function emitFakeHandDatas(fakeHandDatas) {
+        socket.emit("fakeHandDatas", fakeHandDatas);
+      }
+      const throttledEmitFakeHandDatas = throttle(emitFakeHandDatas, wait);
+      function rafCallback() {
         const fakeHandDatas = users.reduce((prev, user, index) => {
           if (user.isSessionSupported) {
             return prev; // this user will be generating their own hand data
@@ -182,9 +189,10 @@ const useSocket = create(
           });
           return prev;
         }, []);
-        socket.emit("fakeHandDatas", fakeHandDatas);
+        throttledEmitFakeHandDatas(fakeHandDatas)
         frame++;
-      };
+      }
+
       useSocket.setState({ ready: true, rafCallback });
     }
   },
