@@ -19,8 +19,6 @@ export default class DuplexConnection {
     this.app = express();
     this.port = options.port;
     if (this.options.secure) {
-      // https://stackoverflow.com/a/35231213
-      // openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout key.pem -out cert.pem
       this.server = https.createServer({
         key: fs.readFileSync(path.resolve(__dirname, "key.pem")),
         cert: fs.readFileSync(path.resolve(__dirname, "cert.pem")),
