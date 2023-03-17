@@ -4,12 +4,14 @@ import { useControls } from "leva";
 
 const pieces = [
   {
+    visible: true,
     name: "my-fun-test-LiverArteries",
     debug: true,
     scale: 0.5,
     position: [-0.15, -0.2, -0.3],
   },
   {
+    visible: true,
     name: "my-fun-test-crate",
     debug: true,
     scale: 0.3,
