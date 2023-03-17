@@ -33,6 +33,9 @@ export function onAdminConnect(socket) {
   socket.on("handViewChange", (event) => {
     this.io.to("handRoom").emit("handViewChange", event);
   });
+  socket.on("piecesPropsChange", (event) => {
+    this.io.to("handRoom").emit("piecesPropsChange", event);
+  });
 }
 
 export async function onConnect(socket) {

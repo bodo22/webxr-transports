@@ -15,6 +15,7 @@ import useSocket, {
   useXRUsers,
 } from "@/stores/socket";
 import Pizza from "@/components/Pizza";
+import PiecesProps from "@/components/PiecesProps";
 
 function TabPanel(props) {
   const { children, value, index } = props;
@@ -52,7 +53,8 @@ export default function BasicTabs() {
 
   return (
     <Box sx={{ width: "100%" }}>
-      Users: {users.length} ({connectedUsers.length} connected ({xrUsers.length} XR, {inlineUsers.length} inline), {fakeUsers.length} fake)
+      Users: {users.length} ({connectedUsers.length} connected ({xrUsers.length}{" "}
+      XR, {inlineUsers.length} inline), {fakeUsers.length} fake)
       <br />
       Socket connection state:{" "}
       {socketReady ? (
@@ -88,6 +90,7 @@ export default function BasicTabs() {
         />
         <Pizza />
       </div>
+      <PiecesProps />
     </Box>
   );
 }

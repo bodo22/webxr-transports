@@ -40,6 +40,7 @@ const initialState = {
   users: [],
   handData: undefined,
   socket: undefined,
+  pieces: [],
 };
 
 // based on https://sashamaps.net/docs/resources/20-colors/
@@ -147,6 +148,19 @@ const mutations = (set, get) => {
       set({ handView: newVariant });
       socket.emit("handViewChange", { type: newVariant });
     },
+    updatePieceProps(pieceProps) {
+      const oldIndex = get().pieces.findIndex(
+        ({ name }) => name === pieceProps.name
+      );
+      const newPieces = [...get().pieces];
+      if (oldIndex > -1) {
+        newPieces[oldIndex] = pieceProps;
+      } else {
+        newPieces.push(pieceProps);
+      }
+      set({ pieces: newPieces });
+      socket.emit("piecesPropsChange", newPieces);
+    },
   };
 };
 
@@ -189,7 +203,7 @@ const useSocket = create(
           });
           return prev;
         }, []);
-        throttledEmitFakeHandDatas(fakeHandDatas)
+        throttledEmitFakeHandDatas(fakeHandDatas);
         frame++;
       }
 
