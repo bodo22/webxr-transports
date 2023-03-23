@@ -34,7 +34,7 @@ import DuplexConnection from "./duplexConnection.js";
 // import { onConnect } from "./utils/pingPongSync.js";
 // import { onConnect } from "./utils/pingPongAsync.js";
 // import { onConnect } from "./utils/clientPingPong.js";
-import { onConnect, onAdminConnect } from "./utils/loopBroadcastHandData.js";
+import { onConnect, onAdminConnect } from "./utils/socketsHandler.js";
 
 new DuplexConnection({
   port: 3003,

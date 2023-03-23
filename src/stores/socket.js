@@ -40,7 +40,22 @@ const initialState = {
   users: [],
   handData: undefined,
   socket: undefined,
-  pieces: [],
+  pieces: [
+    {
+      visible: true,
+      name: "my-fun-test-LiverArteries",
+      debug: true,
+      scale: 0.5,
+      position: [-0.15, -0.2, -0.3],
+    },
+    {
+      visible: true,
+      name: "my-fun-test-crate",
+      debug: true,
+      scale: 0.3,
+      position: [-0.15, -0.2, -0.3],
+    },
+  ],
 };
 
 // based on https://sashamaps.net/docs/resources/20-colors/
@@ -113,9 +128,19 @@ const mutations = (set, get) => {
     setUsers(newUsers);
   }
 
+  function updatePieceProps(pieceProps) {
+    const oldPieces = get().pieces;
+    const oldIndex = oldPieces.findIndex((p) => p.name === pieceProps.name);
+    const newPieces = [...oldPieces];
+    newPieces.splice(oldIndex, oldIndex === -1 ? 0 : 1, pieceProps);
+    set({ pieces: newPieces });
+    socket.emit("piecesPropsChange", newPieces);
+  }
+
   socket
     .on("connect", () => {
       set({ socket, socketReady: true });
+      socket.emit("piecesPropsChange", get().pieces);
     })
     .on("disconnect", () => {
       set({ socketReady: false });
@@ -139,6 +164,7 @@ const mutations = (set, get) => {
   window.requestAnimationFrame(step);
 
   return {
+    socket,
     setUsers,
     setFakeUsers(event, newFakeUsers) {
       updateFakeUsers(newFakeUsers);
@@ -148,19 +174,7 @@ const mutations = (set, get) => {
       set({ handView: newVariant });
       socket.emit("handViewChange", { type: newVariant });
     },
-    updatePieceProps(pieceProps) {
-      const oldIndex = get().pieces.findIndex(
-        ({ name }) => name === pieceProps.name
-      );
-      const newPieces = [...get().pieces];
-      if (oldIndex > -1) {
-        newPieces[oldIndex] = pieceProps;
-      } else {
-        newPieces.push(pieceProps);
-      }
-      set({ pieces: newPieces });
-      socket.emit("piecesPropsChange", newPieces);
-    },
+    updatePieceProps,
   };
 };
 
@@ -189,7 +203,7 @@ const useSocket = create(
           if (user.isSessionSupported) {
             return prev; // this user will be generating their own hand data
           }
-          const frameOffset = index * 20;
+          const frameOffset = index * 90;
           const userFrame = frame + frameOffset;
           const userFrameHandData = readArrayItem(handData, userFrame);
           const newHandData = {

@@ -2,23 +2,6 @@ import React from "react";
 import useSocket from "@/stores/socket";
 import { useControls } from "leva";
 
-const pieces = [
-  {
-    visible: true,
-    name: "my-fun-test-LiverArteries",
-    debug: true,
-    scale: 0.5,
-    position: [-0.15, -0.2, -0.3],
-  },
-  {
-    visible: true,
-    name: "my-fun-test-crate",
-    debug: true,
-    scale: 0.3,
-    position: [-0.15, -0.2, -0.3],
-  },
-];
-
 function PieceControlPanel({ name, initialData }) {
   const updatePieceProps = useSocket((state) => state.updatePieceProps);
   const data = useControls(name, initialData);
@@ -30,6 +13,8 @@ function PieceControlPanel({ name, initialData }) {
 }
 
 export default function PiecesProps() {
+  const pieces = useSocket((state) => state.pieces);
+
   return (
     <div style={{ alignItems: "center", justifyContent: "center" }}>
       {pieces.map(({ name, ...data }) => {
