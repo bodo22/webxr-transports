@@ -66,6 +66,7 @@ const initialState = {
     gizmo: false,
     hands: false,
     piecesPos: false,
+    collide: false,
   },
 };
 
