@@ -15,12 +15,12 @@ function PieceControlPanel({ name, initialData }) {
 export default function PiecesProps() {
   const pieces = useSocket((state) => state.pieces);
   const debug = useSocket((state) => state.debug);
-  const socket = useSocket((state) => state.socket);
+  const setDebug = useSocket((state) => state.setDebug);
   const data = useControls("debug", debug);
 
   React.useEffect(() => {
-    socket.emit("debug", data);
-  }, [socket, data]);
+    setDebug(data);
+  }, [setDebug, data]);
 
   return (
     <div style={{ alignItems: "center", justifyContent: "center" }}>

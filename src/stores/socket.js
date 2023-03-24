@@ -104,6 +104,7 @@ const mutations = (set, get) => {
     set({ users: newUsers });
     socket.emit("userUpdate", newUsers);
     socket.emit("handViewChange", { type: get().handView });
+    socket.emit("debug", get().debug);
   }
 
   function updateConnectedUsers(connectedUsers) {
@@ -184,6 +185,10 @@ const mutations = (set, get) => {
       newPieces.splice(oldIndex, oldIndex === -1 ? 0 : 1, pieceProps);
       set({ pieces: newPieces });
       socket.emit("piecesPropsChange", newPieces);
+    },
+    setDebug(newDebug) {
+      socket.emit("debug", newDebug);
+      set({ debug: newDebug });
     },
   };
 };
