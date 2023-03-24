@@ -28,6 +28,7 @@ const broadcastEvents = [
   "reset",
   "handViewChange",
   "piecesPropsChange",
+  "debug",
 ];
 export function onAdminConnect(socket) {
   broadcastConnectedUsers.call(this);

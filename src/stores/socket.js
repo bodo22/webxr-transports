@@ -56,6 +56,17 @@ const initialState = {
       position: [-0.15, -0.2, -0.3],
     },
   ],
+  debug: {
+    boundBoxes: true,
+    grid: true,
+    pizzaGeo: true,
+    pizzaNums: true,
+    stats: true,
+    center: true,
+    gizmo: false,
+    hands: false,
+    piecesPos: false,
+  },
 };
 
 // based on https://sashamaps.net/docs/resources/20-colors/
@@ -128,15 +139,6 @@ const mutations = (set, get) => {
     setUsers(newUsers);
   }
 
-  function updatePieceProps(pieceProps) {
-    const oldPieces = get().pieces;
-    const oldIndex = oldPieces.findIndex((p) => p.name === pieceProps.name);
-    const newPieces = [...oldPieces];
-    newPieces.splice(oldIndex, oldIndex === -1 ? 0 : 1, pieceProps);
-    set({ pieces: newPieces });
-    socket.emit("piecesPropsChange", newPieces);
-  }
-
   socket
     .on("connect", () => {
       set({ socket, socketReady: true });
@@ -147,7 +149,8 @@ const mutations = (set, get) => {
     })
     .on("connectedUsers", updateConnectedUsers);
 
-  fetch("./handData/handData1.json")
+  // fetch("./handData/handData1.json")
+  fetch("./handData/handData-pinch.json")
     .then((response) => response.json())
     .then((handData) => {
       set({ handData });
@@ -174,7 +177,14 @@ const mutations = (set, get) => {
       set({ handView: newVariant });
       socket.emit("handViewChange", { type: newVariant });
     },
-    updatePieceProps,
+    updatePieceProps(pieceProps) {
+      const oldPieces = get().pieces;
+      const oldIndex = oldPieces.findIndex((p) => p.name === pieceProps.name);
+      const newPieces = [...oldPieces];
+      newPieces.splice(oldIndex, oldIndex === -1 ? 0 : 1, pieceProps);
+      set({ pieces: newPieces });
+      socket.emit("piecesPropsChange", newPieces);
+    },
   };
 };
 
