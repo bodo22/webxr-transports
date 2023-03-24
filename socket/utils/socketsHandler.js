@@ -1,4 +1,5 @@
 import json from "../../public/handData/handData1.json" assert { type: "json" };
+import { Matrix4, Quaternion, Vector3 } from "three";
 
 let state = {
   pieces: [],
@@ -22,25 +23,46 @@ function broadcastConnectedUsers() {
   this.io.emit("connectedUsers", connectedUsers);
   this.io.of("/admin").emit("connectedUsers", connectedUsers);
 }
-
+const broadcastEvents = [
+  "userUpdate",
+  "reset",
+  "handViewChange",
+  "piecesPropsChange",
+];
 export function onAdminConnect(socket) {
   broadcastConnectedUsers.call(this);
-  socket.on("fakeHandDatas", (fakeHandDatas) => {
-    fakeHandDatas.forEach((data) => {
-      // send data for fake clients & clients that don't support WebXR sessions
-      this.io.to("handRoom").emit("handData", data);
-    });
-  });
-  socket.on("userUpdate", (users) => {
-    socket.emit("userId", socket.id);
-    this.io.to("handRoom").emit("userUpdate", users);
-  });
-  socket.on("handViewChange", (event) => {
-    this.io.to("handRoom").emit("handViewChange", event);
-  });
-  socket.on("piecesPropsChange", (newPieces) => {
-    state.pieces = newPieces;
-    this.io.to("handRoom").emit("piecesPropsChange", newPieces);
+  socket.onAny((eventName, ...args) => {
+    if (broadcastEvents.includes(eventName)) {
+      this.io.to("handRoom").emit(eventName, ...args);
+    }
+    switch (eventName) {
+      case "reset": {
+        state.piecesTransforms = [];
+        const pieces = state.pieces.map((piece) => ({
+          ...piece,
+          key: `${piece.name}-${Date.now()}`,
+        }));
+        this.io.to("handRoom").emit("piecesPropsChange", pieces);
+        break;
+      }
+      case "userUpdate": {
+        socket.emit("userId", socket.id);
+        break;
+      }
+      case "piecesPropsChange": {
+        state.pieces = args[0];
+        break;
+      }
+      case "fakeHandDatas": {
+        args[0].forEach((data) => {
+          // send data for fake clients & clients that don't support WebXR sessions
+          this.io.to("handRoom").emit("handData", data);
+        });
+        break;
+      }
+      default:
+        break;
+    }
   });
   this.io.to("handRoom").emit("piecesPropsChange", state.pieces);
 }
@@ -59,8 +81,23 @@ export async function onConnect(socket) {
     const initialPinchTransform = state.piecesTransforms.find(
       (p) => p.name === piece.name
     );
+    let newProps = {};
+    if (initialPinchTransform) {
+      const matrix = new Matrix4();
+      matrix.elements = initialPinchTransform.matrix;
+      newProps = {
+        position: new Vector3(),
+        quaternion: new Quaternion(),
+        scale: new Vector3(),
+      };
 
-    return { ...piece, initialPinchTransform };
+      matrix.decompose(newProps.position, newProps.quaternion, newProps.scale);
+    }
+    const props = Object.entries(newProps).reduce((prev, [key, value]) => {
+      prev[key] = value.toArray();
+      return prev;
+    }, {});
+    return { ...piece, ...props };
   });
   socket.emit("piecesPropsChange", initialPiecesProps);
 

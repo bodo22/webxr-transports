@@ -16,6 +16,7 @@ import useSocket, {
 } from "@/stores/socket";
 import Pizza from "@/components/Pizza";
 import PiecesProps from "@/components/PiecesProps";
+import { Button } from "@mui/material";
 
 function TabPanel(props) {
   const { children, value, index } = props;
@@ -39,6 +40,7 @@ TabPanel.propTypes = {
 
 export default function BasicTabs() {
   const socketReady = useSocket((state) => state.socketReady);
+  const socket = useSocket((state) => state.socket);
   const handView = useSocket((state) => state.handView);
   const sethandView = useSocket((state) => state.sethandView);
   const connectedUsers = useConnectedUsers();
@@ -51,6 +53,10 @@ export default function BasicTabs() {
   const variantIndex = handViews.findIndex((v) => v === handView);
   const filter = handView !== "Pizza" ? "grayscale" : "";
 
+  const handleReset = () => {
+    socket.emit("reset");
+  };
+
   return (
     <Box sx={{ width: "100%" }}>
       Users: {users.length} ({connectedUsers.length} connected ({xrUsers.length}{" "}
@@ -62,6 +68,8 @@ export default function BasicTabs() {
       ) : (
         <PowerOffIcon color="error" />
       )}
+      <br />
+      <Button onClick={handleReset} variant="contained">Reset</Button>
       <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
         <Tabs value={variantIndex} onChange={sethandView}>
           {handViews.map((v) => {

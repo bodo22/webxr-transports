@@ -40,6 +40,7 @@
     "socket.io": "^4.6.1",
     "socket.io-client": "^4.6.1",
     "socket.io-msgpack-parser": "^3.0.2",
+    "three": "^0.150.1",
     "zustand": "^4.3.6"
   },
   "devDependencies": {
