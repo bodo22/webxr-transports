@@ -12,6 +12,12 @@ export async function onDisconnect(socket, reason) {
   broadcastConnectedUsers.call(this);
 }
 
+function sendHandDataToSockets(sockets, data) {
+  sockets.forEach((socket) => {
+    socket.emit("handData", data);
+  });
+}
+
 function broadcastConnectedUsers() {
   const connectedUsers = Object.values(this.sockets).map((socket) => {
     return {
@@ -57,7 +63,7 @@ export function onAdminConnect(socket) {
       case "fakeHandDatas": {
         args[0].forEach((data) => {
           // send data for fake clients & clients that don't support WebXR sessions
-          this.io.to("handRoom").emit("handData", data);
+          sendHandDataToSockets(Object.values(this.sockets), data);
         });
         break;
       }
@@ -103,7 +109,11 @@ export async function onConnect(socket) {
   socket.emit("piecesPropsChange", initialPiecesProps);
 
   socket.on("handData", (data) => {
-    socket.to("handRoom").emit("handData", data);
+    const otherSockets = Object.entries(this.sockets)
+      .filter(([socketId]) => socketId !== socket.id)
+      .map(([_, s]) => s);
+
+      sendHandDataToSockets(otherSockets, data);
   });
 
   socket.on("pinchData", (data) => {
