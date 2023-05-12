@@ -42,12 +42,14 @@ const initialState = {
   socket: undefined,
   pieces: [
     {
+      render: true,
       visible: true,
       name: "my-fun-test-LiverArteries",
       scale: 0.5,
       position: [-0.45, -0.2, -0.3],
     },
     {
+      render: true,
       visible: true,
       name: "my-fun-test-crate",
       scale: 0.3,
@@ -149,8 +151,7 @@ const mutations = (set, get) => {
     })
     .on("connectedUsers", updateConnectedUsers);
 
-  // fetch("./handData/handData1.json")
-  fetch("./handData/handData-pinch.json")
+  fetch("./handData/handData-gesture.json")
     .then((response) => response.json())
     .then((handData) => {
       set({ handData });
@@ -220,14 +221,11 @@ const useSocket = create(
           const frameOffset = index * 90;
           const userFrame = frame + frameOffset;
           const userFrameHandData = readArrayItem(handData, userFrame);
-          const newHandData = {
-            left: userFrameHandData.left,
-            right: userFrameHandData.right,
-          };
+          const newHandData = { ...userFrameHandData };
           prev.push({
             ...user,
             time: Date.now(),
-            handData: newHandData,
+            ...newHandData,
           });
           return prev;
         }, []);

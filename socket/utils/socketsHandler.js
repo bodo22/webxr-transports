@@ -73,6 +73,38 @@ export function onAdminConnect(socket) {
   });
   this.io.to("handRoom").emit("piecesPropsChange", state.pieces);
 }
+
+function isEmitDisposable(data, curr) {
+  let isDisposable = false;
+  const incomingPinchIsOlder =
+    curr?.pinchStart && data.pinchStart < curr.pinchStart;
+  const pinchStartOverlap =
+    curr?.pinchStart && data.pinchStart === curr.pinchStart;
+  if (incomingPinchIsOlder || pinchStartOverlap) {
+    if (incomingPinchIsOlder) {
+      // console.log("incoming is older", curr.pinchStart, data.pinchStart);
+      isDisposable = true;
+    }
+    const incomingPinchHasDifferentUserId =
+      curr?.userId && data.userId !== curr.userId;
+    if (pinchStartOverlap && incomingPinchHasDifferentUserId) {
+      // console.log("pinchstart overlap but diff userId", curr, data);
+      isDisposable = true;
+    }
+  }
+  return isDisposable;
+}
+
+function updatePiecesProps(data, index) {
+  const newPiecesTransforms = [...state.piecesTransforms];
+  newPiecesTransforms.splice(
+    index === -1 ? newPiecesTransforms.length : index,
+    index === -1 ? 0 : 1,
+    data
+  );
+  state.piecesTransforms = newPiecesTransforms;
+}
+
 export async function onConnect(socket) {
   console.log(`socket ${socket.id} connected`);
   socket.on("disconnect", onDisconnect.bind(this, socket));
@@ -113,36 +145,18 @@ export async function onConnect(socket) {
       .filter(([socketId]) => socketId !== socket.id)
       .map(([_, s]) => s);
 
-      sendHandDataToSockets(otherSockets, data);
+    sendHandDataToSockets(otherSockets, data);
   });
 
   socket.on("pinchData", (data) => {
     const index = state.piecesTransforms.findIndex((p) => p.name === data.name);
     const curr = state.piecesTransforms[index];
-    const incomingPinchIsOlder =
-      curr?.pinchStart && data.pinchStart < curr.pinchStart;
-    const pinchStartOverlap =
-      curr?.pinchStart && data.pinchStart === curr.pinchStart;
-    if (incomingPinchIsOlder || pinchStartOverlap) {
-      if (incomingPinchIsOlder) {
-        // console.log("incoming is older", curr.pinchStart, data.pinchStart);
-        return;
-      }
-      const incomingPinchHasDifferentUserId =
-        curr?.userId && data.userId !== curr.userId;
-      if (pinchStartOverlap && incomingPinchHasDifferentUserId) {
-        // console.log("pinchstart overlap but diff userId", curr, data);
-        return;
-      }
+    if (isEmitDisposable(data, curr)) {
+      return;
     }
-    const newPiecesTransforms = [...state.piecesTransforms];
-    newPiecesTransforms.splice(
-      index === -1 ? newPiecesTransforms.length : index,
-      index === -1 ? 0 : 1,
-      data
-    );
-    state.piecesTransforms = newPiecesTransforms;
 
+    updatePiecesProps(data, index);
+    
     socket.to("handRoom").emit("pinchData", data);
     // this.io.to("handRoom").emit("pinchData", data);
   });
