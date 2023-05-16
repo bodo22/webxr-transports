@@ -7,7 +7,7 @@ import socket from "./socketConnection";
 import shortUuid from "short-uuid";
 import throttle from "lodash.throttle";
 
-export const handViews = ["Ego", "Pizza"];
+export const handViews = ["Pizza", "Ego"];
 
 // const rgb = converter("rgb");
 
@@ -104,7 +104,7 @@ const mutations = (set, get) => {
     });
     set({ users: newUsers });
     socket.emit("userUpdate", newUsers);
-    socket.emit("handViewChange", { type: get().handView });
+    socket.emit("handView", get().handView);
     socket.emit("debug", get().debug);
   }
 
@@ -144,7 +144,7 @@ const mutations = (set, get) => {
   socket
     .on("connect", () => {
       set({ socket, socketReady: true });
-      socket.emit("piecesPropsChange", get().pieces);
+      socket.emit("pieces", get().pieces);
     })
     .on("disconnect", () => {
       set({ socketReady: false });
@@ -174,9 +174,9 @@ const mutations = (set, get) => {
       updateFakeUsers(newFakeUsers);
     },
     sethandView(event, newVariantIndex) {
-      const newVariant = handViews[newVariantIndex];
-      set({ handView: newVariant });
-      socket.emit("handViewChange", { type: newVariant });
+      const handView = handViews[newVariantIndex];
+      set({ handView });
+      socket.emit("handView", handView);
     },
     updatePieceProps(pieceProps) {
       const oldPieces = get().pieces;
@@ -184,11 +184,12 @@ const mutations = (set, get) => {
       const newPieces = [...oldPieces];
       newPieces.splice(oldIndex, oldIndex === -1 ? 0 : 1, pieceProps);
       set({ pieces: newPieces });
-      socket.emit("piecesPropsChange", newPieces);
+      socket.emit("pieces", newPieces);
     },
-    setDebug(newDebug) {
-      socket.emit("debug", newDebug);
-      set({ debug: newDebug });
+    setAndEmit(key, value) {
+      // e.g. key = debug, value = newDebug obj
+      socket.emit(key, value);
+      set({ [key]: value });
     },
   };
 };

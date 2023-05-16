@@ -4,6 +4,7 @@ import { Matrix4, Quaternion, Vector3 } from "three";
 let state = {
   pieces: [],
   piecesTransforms: [],
+  fidelity: "virtual",
 };
 
 export async function onDisconnect(socket, reason) {
@@ -13,6 +14,7 @@ export async function onDisconnect(socket, reason) {
 }
 
 function sendHandDataToSockets(sockets, data) {
+  data.fidelity = state.fidelity;
   sockets.forEach((socket) => {
     socket.emit("handData", data);
   });
@@ -32,15 +34,22 @@ function broadcastConnectedUsers() {
 const broadcastEvents = [
   "userUpdate",
   "reset",
-  "handViewChange",
-  "piecesPropsChange",
+  "handView",
+  "pieces",
   "debug",
+  "fidelity",
 ];
+
+const syncEventsToServer = ["pieces", "fidelity"];
+
 export function onAdminConnect(socket) {
   broadcastConnectedUsers.call(this);
   socket.onAny((eventName, ...args) => {
     if (broadcastEvents.includes(eventName)) {
       this.io.to("handRoom").emit(eventName, ...args);
+    }
+    if (syncEventsToServer.includes(eventName)) {
+      state[eventName] = args[0];
     }
     switch (eventName) {
       case "reset": {
@@ -49,15 +58,11 @@ export function onAdminConnect(socket) {
           ...piece,
           key: `${piece.name}-${Date.now()}`,
         }));
-        this.io.to("handRoom").emit("piecesPropsChange", pieces);
+        this.io.to("handRoom").emit("pieces", pieces);
         break;
       }
       case "userUpdate": {
         socket.emit("userId", socket.id);
-        break;
-      }
-      case "piecesPropsChange": {
-        state.pieces = args[0];
         break;
       }
       case "fakeHandDatas": {
@@ -71,7 +76,7 @@ export function onAdminConnect(socket) {
         break;
     }
   });
-  this.io.to("handRoom").emit("piecesPropsChange", state.pieces);
+  this.io.to("handRoom").emit("pieces", state.pieces);
 }
 
 function isEmitDisposable(data, curr) {
@@ -138,7 +143,7 @@ export async function onConnect(socket) {
     }, {});
     return { ...piece, ...props };
   });
-  socket.emit("piecesPropsChange", initialPiecesProps);
+  socket.emit("pieces", initialPiecesProps);
 
   socket.on("handData", (data) => {
     const otherSockets = Object.entries(this.sockets)
@@ -156,7 +161,7 @@ export async function onConnect(socket) {
     }
 
     updatePiecesProps(data, index);
-    
+
     socket.to("handRoom").emit("pinchData", data);
     // this.io.to("handRoom").emit("pinchData", data);
   });
