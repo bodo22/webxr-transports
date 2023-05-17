@@ -1,10 +1,9 @@
-import json from "../../public/handData/handData1.json" assert { type: "json" };
 import { Matrix4, Quaternion, Vector3 } from "three";
 
 let state = {
   pieces: [],
   piecesTransforms: [],
-  fidelity: "virtual",
+  fidelity: { level: "virtual" },
 };
 
 export async function onDisconnect(socket, reason) {
