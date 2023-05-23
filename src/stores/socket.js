@@ -67,6 +67,7 @@ const initialState = {
     hands: false,
     piecesPos: false,
     collide: false,
+    pizzaRadius: 0.5,
   },
 };
 
@@ -152,7 +153,7 @@ const mutations = (set, get) => {
     .on("connectedUsers", updateConnectedUsers);
 
   fetch("./handData/handData-gesture.json")
-  // fetch("./handData/handData-gesture-wrist-base.json") // use -2 to select pose for gesture fidelity
+    // fetch("./handData/handData-gesture-wrist-base.json") // use -2 to select pose for gesture fidelity
     .then((response) => response.json())
     .then((handData) => {
       set({ handData });
