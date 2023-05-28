@@ -6,21 +6,13 @@ import {
   LevaPanel,
   useStoreContext,
   LevaStoreProvider,
+  button,
 } from "leva";
+
+import createNewLevelPieces from "@/stores/helpers/createNewLevelPieces";
 
 // partly based on
 // https://codesandbox.io/embed/github/pmndrs/leva/tree/main/demo/src/sandboxes/leva-advanced-panels?codemirror=1
-
-function PieceControlPanel({ name, initialData }) {
-  const store = useStoreContext();
-  const updatePieceProps = useSocket((state) => state.updatePieceProps);
-  const data = useControls(name, initialData, { store });
-
-  React.useEffect(() => {
-    updatePieceProps({ ...data, name });
-  }, [updatePieceProps, name, data]);
-  return null;
-}
 
 const level = ["none", "blob", "gesture", "virtual"];
 const blobJoint = [
@@ -51,14 +43,44 @@ const blobJoint = [
   "pinky-finger-tip",
 ];
 
+function PieceControlPanel({ name, initialData }) {
+  const store = useStoreContext();
+  const [, set] = useControls(name, () => initialData, { store });
+
+  React.useEffect(() => {
+    set(initialData);
+  }, [set, initialData]);
+
+  // React.useEffect(() => {
+  //   updatePieceProps({ ...data, name });
+  // }, [updatePieceProps, name, data]);
+  // return null;
+}
+
 export default function PiecesProps() {
   const pieces = useSocket((state) => state.pieces);
   const debug = useSocket((state) => state.debug);
   const setAndEmit = useSocket((state) => state.setAndEmit);
+  const socket = useSocket((state) => state.socket);
   const storeDebug = useCreateStore();
   const storePieces = useCreateStore();
-  const storeFidelity = useCreateStore();
+  const levels = useCreateStore();
   const newDebug = useControls("debug", debug, { store: storeDebug });
+  const newLevel = useControls(
+    "Level",
+    {
+      studyMode: true,
+      testMode: false,
+      testReset: button(() => {
+        socket.emit("level", { ...newLevel, testReset: true });
+      }),
+      level: {
+        value: 1,
+        options: new Array(8).fill(0).map((_, i) => i + 1),
+      },
+    },
+    { store: levels }
+  );
   const newFidelity = useControls(
     "Fidelity",
     {
@@ -71,35 +93,49 @@ export default function PiecesProps() {
         options: blobJoint,
       },
     },
-    { store: storeFidelity }
+    { store: levels }
   );
   React.useEffect(() => {
     setAndEmit("debug", newDebug);
   }, [setAndEmit, newDebug]);
-
   React.useEffect(() => {
     setAndEmit("fidelity", newFidelity);
   }, [setAndEmit, newFidelity]);
+  React.useEffect(() => {
+    setAndEmit("level", newLevel);
+  }, [setAndEmit, newLevel]);
+
+  React.useEffect(() => {
+    const newPieces = createNewLevelPieces({ give: 2, self: 1 });
+    setAndEmit("pieces", newPieces);
+  }, [setAndEmit, newLevel.level]);
 
   return (
     <>
-      <LevaPanel store={storeDebug} />
-      <LevaPanel store={storeFidelity} />
-      <LevaPanel store={storePieces} />
+      <div className="flex flex-wrap">
+        {[storeDebug, levels, storePieces].map((store) => {
+          const cls =
+            storePieces.storeId === store.storeId ? "pointer-events-none" : ""; // handled by changing level
+          return (
+            <div
+              key={`leva-panel-${store.storeId}`}
+              className={`min-w-[330px] p-5 ${cls}`}
+            >
+              <LevaPanel store={store} fill flat />
+            </div>
+          );
+        })}
+      </div>
       <LevaStoreProvider store={storePieces}>
-        <div style={{ alignItems: "center", justifyContent: "center" }}>
-          {pieces.map(({ name, ...data }) => {
-            return (
-              <>
-                <PieceControlPanel
-                  key={`controlPanel-for-${name}`}
-                  name={name}
-                  initialData={data}
-                />
-              </>
-            );
-          })}
-        </div>
+        {pieces.map(({ name, ...data }) => {
+          return (
+            <PieceControlPanel
+              key={`controlPanel-for-${name}`}
+              name={name}
+              initialData={data}
+            />
+          );
+        })}
       </LevaStoreProvider>
     </>
   );

@@ -3,9 +3,11 @@ import { combine, subscribeWithSelector } from "zustand/middleware";
 import { shallow } from "zustand/shallow";
 // import { Poline } from "poline";
 // import { formatHex, converter } from "culori";
-import socket from "./socketConnection";
 import shortUuid from "short-uuid";
 import throttle from "lodash.throttle";
+
+import socket from "@/stores/socketConnection";
+import createNewLevelPieces from "@/stores/helpers/createNewLevelPieces";
 
 export const handViews = ["Pizza", "Ego"];
 
@@ -34,28 +36,15 @@ function getFakeUsers(users) {
   return users.filter(({ socketId }) => !socketId);
 }
 
+const pieces = createNewLevelPieces({ give: 2, self: 1 });
+
 const initialState = {
   socketReady: false,
   handView: handViews[0],
   users: [],
   handData: undefined,
   socket: undefined,
-  pieces: [
-    {
-      render: true,
-      visible: true,
-      name: "my-fun-test-LiverArteries",
-      scale: 0.5,
-      position: [-0.45, -0.2, -0.3],
-    },
-    {
-      render: true,
-      visible: true,
-      name: "my-fun-test-crate",
-      scale: 0.3,
-      position: [-0.15, -0.2, -0.3],
-    },
-  ],
+  pieces,
   debug: {
     boundBoxes: false,
     grid: false,
@@ -66,6 +55,7 @@ const initialState = {
     gizmo: false,
     hands: false,
     piecesPos: false,
+    pieces: true,
     collide: false,
     pizzaRadius: 0.5,
   },
@@ -180,14 +170,14 @@ const mutations = (set, get) => {
       set({ handView });
       socket.emit("handView", handView);
     },
-    updatePieceProps(pieceProps) {
-      const oldPieces = get().pieces;
-      const oldIndex = oldPieces.findIndex((p) => p.name === pieceProps.name);
-      const newPieces = [...oldPieces];
-      newPieces.splice(oldIndex, oldIndex === -1 ? 0 : 1, pieceProps);
-      set({ pieces: newPieces });
-      socket.emit("pieces", newPieces);
-    },
+    // updatePieceProps(pieceProps) {
+    //   const oldPieces = get().pieces;
+    //   const oldIndex = oldPieces.findIndex((p) => p.name === pieceProps.name);
+    //   const newPieces = [...oldPieces];
+    //   newPieces.splice(oldIndex, oldIndex === -1 ? 0 : 1, pieceProps);
+    //   set({ pieces: newPieces });
+    //   socket.emit("pieces", newPieces);
+    // },
     setAndEmit(key, value) {
       // e.g. key = debug, value = newDebug obj
       socket.emit(key, value);

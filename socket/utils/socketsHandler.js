@@ -4,6 +4,7 @@ let state = {
   pieces: [],
   piecesTransforms: [],
   fidelity: { level: "virtual" },
+  level: { studyMode: true },
 };
 
 export async function onDisconnect(socket, reason) {
@@ -27,6 +28,7 @@ function broadcastConnectedUsers() {
       isSessionSupported: socket.handshake.query.isSessionSupported === "true",
     };
   });
+  this.io.emit("level", state.level);
   this.io.emit("connectedUsers", connectedUsers);
   this.io.of("/admin").emit("connectedUsers", connectedUsers);
 }
@@ -37,9 +39,10 @@ const broadcastEvents = [
   "pieces",
   "debug",
   "fidelity",
+  "level",
 ];
 
-const syncEventsToServer = ["pieces", "fidelity"];
+const syncEventsToServer = ["pieces", "fidelity", "level"];
 
 export function onAdminConnect(socket) {
   broadcastConnectedUsers.call(this);
