@@ -24,7 +24,7 @@ function broadcastConnectedUsers() {
   const connectedUsers = Object.values(this.sockets).map((socket) => {
     return {
       socketId: socket.id,
-      userId: socket.id,
+      userId: socket.handshake.query.env,
       isSessionSupported: socket.handshake.query.isSessionSupported === "true",
     };
   });
@@ -64,7 +64,7 @@ export function onAdminConnect(socket) {
         break;
       }
       case "userUpdate": {
-        socket.emit("userId", socket.id);
+        socket.emit("userId", socket.handshake.query.env);
         break;
       }
       case "fakeHandDatas": {
@@ -119,7 +119,7 @@ export async function onConnect(socket) {
   socket.on("message", console.log.bind(console));
 
   this.sockets[socket.id] = socket;
-  socket.emit("userId", socket.id);
+  socket.emit("userId", socket.handshake.query.env);
   socket.join("handRoom");
 
   broadcastConnectedUsers.call(this);

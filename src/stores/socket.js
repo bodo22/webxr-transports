@@ -7,7 +7,9 @@ import shortUuid from "short-uuid";
 import throttle from "lodash.throttle";
 
 import socket from "@/stores/socketConnection";
-import createNewLevelPieces from "@/stores/helpers/createNewLevelPieces";
+import createNewLevelPieces, {
+  convenientColors
+} from "@/stores/helpers/createNewLevelPieces";
 
 export const handViews = ["Pizza", "Ego"];
 
@@ -55,24 +57,11 @@ const initialState = {
     gizmo: false,
     hands: false,
     piecesPos: false,
-    pieces: true,
+    pieces: false,
     collide: false,
     pizzaRadius: 0.5,
   },
 };
-
-// based on https://sashamaps.net/docs/resources/20-colors/
-const convenientColors = [
-  { r: 255 / 255, g: 225 / 255, b: 25 / 255 },
-  { r: 0 / 255, g: 130 / 255, b: 200 / 255 },
-  { r: 245 / 255, g: 130 / 255, b: 48 / 255 },
-  { r: 220 / 255, g: 190 / 255, b: 255 / 255 },
-  { r: 128 / 255, g: 0 / 255, b: 0 / 255 },
-  { r: 0 / 255, g: 0 / 255, b: 128 / 255 },
-  { r: 128 / 255, g: 128 / 255, b: 128 / 255 },
-  { r: 255 / 255, g: 255 / 255, b: 255 / 255 },
-  { r: 0 / 255, g: 0 / 255, b: 0 / 255 },
-];
 
 const mutations = (set, get) => {
   function setUsers(users) {

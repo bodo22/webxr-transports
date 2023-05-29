@@ -78,6 +78,8 @@ export default function PiecesProps() {
         value: 1,
         options: new Array(8).fill(0).map((_, i) => i + 1),
       },
+      positionThreshold: 0.02,
+      rotationThreshold: 5,
     },
     { store: levels }
   );
