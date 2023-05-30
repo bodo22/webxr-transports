@@ -8,7 +8,7 @@ import throttle from "lodash.throttle";
 
 import socket from "@/stores/socketConnection";
 import createNewLevelPieces, {
-  convenientColors
+  convenientColors,
 } from "@/stores/helpers/createNewLevelPieces";
 
 export const handViews = ["Pizza", "Ego"];
@@ -22,7 +22,8 @@ function readArrayItem(array, index) {
 
 function getInlineUsers(users) {
   return users.filter(
-    ({ isSessionSupported, socketId }) => !isSessionSupported && socketId
+    ({ isSessionSupported, socketId, userId }) =>
+      !isSessionSupported && socketId && userId !== "spectator"
   );
 }
 
@@ -31,7 +32,9 @@ function getXRUsers(users) {
 }
 
 function getConnectedUsers(users) {
-  return users.filter(({ socketId }) => !!socketId);
+  return users.filter(
+    ({ socketId, userId }) => !!socketId && userId !== "spectator"
+  );
 }
 
 function getFakeUsers(users) {
@@ -197,8 +200,8 @@ const useSocket = create(
       const throttledEmitFakeHandDatas = throttle(emitFakeHandDatas, wait);
       function rafCallback() {
         const fakeHandDatas = users.reduce((prev, user, index) => {
-          if (user.isSessionSupported) {
-            return prev; // this user will be generating their own hand data
+          if (user.isSessionSupported || user.userId === "spectator") {
+            return prev; // this user will be generating their own hand data or they are just watching
           }
           const frameOffset = index * 90;
           const userFrame = frame + frameOffset;

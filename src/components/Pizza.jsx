@@ -61,7 +61,9 @@ const arcGenerator = d3
   .endAngle(endAngle);
 
 export default function Pizza() {
-  const users = useSocket((state) => state.users);
+  const users = useSocket((state) => state.users).filter(
+    ({ userId }) => userId !== "spectator"
+  );
   const slices = d3.pie().value(() => users.length)(
     users.map((user) => ({ ...user, length: users.length }))
   );
