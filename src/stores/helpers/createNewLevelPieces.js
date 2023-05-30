@@ -54,6 +54,7 @@ function getTransformsFor(startIndex, goalIndex, env, type) {
 
 function getPieceFor(startIndex, goalIndex, env, type, i) {
   const transforms = getTransformsFor(startIndex, goalIndex, env, type);
+  const name = `crate-${env}-${i}`;
 
   return {
     startIndex,
@@ -62,9 +63,10 @@ function getPieceFor(startIndex, goalIndex, env, type, i) {
     type,
     render: true,
     visible: true,
-    name: `crate-${env}-${i}`,
+    name,
     gltfPathDebug: `models/debug-crates/${env}-${type}.gltf`,
     scale: 0.05,
+    key: `${name}-${Date.now()}`,
     ...transforms,
   };
 }
