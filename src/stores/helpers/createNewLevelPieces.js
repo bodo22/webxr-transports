@@ -67,6 +67,7 @@ function getPieceFor(startIndex, goalIndex, env, type, i) {
     gltfPathDebug: `models/debug-crates/${env}-${type}.gltf`,
     scale: 0.05,
     key: `${name}-${Date.now()}`,
+    trash: false,
     ...transforms,
   };
 }
@@ -118,7 +119,9 @@ const pieceFileNamesBase = [
   },
 ];
 
-export default function createNewLevelPieces({ give, self }) {
+export default function createNewLevelPieces(
+  { give, self } = { give: 2, self: 1 }
+) {
   const ARstartIndices = shuffle([...Array(give + self).keys()]);
   const ARgoalIndices = shuffle([...Array(give + self).keys()]);
   const VRstartIndices = shuffle([...Array(give + self).keys()]);
@@ -126,7 +129,7 @@ export default function createNewLevelPieces({ give, self }) {
   const colors = shuffle(convenientColors);
   const pieceFileNames = shuffle(pieceFileNamesBase);
   let env = "AR";
-  const ARpieces = ARstartIndices.map((i, index) => {
+  const ARpieces = ARstartIndices.reduce((curr, i, index) => {
     const type = index + 1 <= give ? "give" : "self";
     const startIndex = i;
     let goalIndex;
@@ -136,15 +139,25 @@ export default function createNewLevelPieces({ give, self }) {
     } else {
       goalIndex = ARgoalIndices.shift();
     }
-    return {
+
+    const newPiece = {
       color: colors[index],
       ...pieceFileNames[index],
       ...getPieceFor(startIndex, goalIndex, env, type, i),
     };
-  });
+
+    if (
+      curr.filter(({ type }) => type === "give").length === give - 1 &&
+      type === "give"
+    ) {
+      newPiece.trash = true;
+    }
+    curr.push(newPiece);
+    return curr;
+  }, []);
 
   env = "VR";
-  const VRpieces = VRstartIndices.map((i, index) => {
+  const VRpieces = VRstartIndices.reduce((curr, i, index) => {
     const startIndex = i;
     let type;
     let goalIndices;
@@ -156,20 +169,32 @@ export default function createNewLevelPieces({ give, self }) {
       type = "give";
     }
     const goalIndex = goalIndices.shift();
-    return {
+
+    const newPiece = {
       color: colors[index + 3],
       ...pieceFileNames[index + 3],
       ...getPieceFor(startIndex, goalIndex, env, type, i),
     };
-  });
+
+    if (
+      curr.filter(({ type }) => type === "give").length === give - 1 &&
+      type === "give"
+    ) {
+      newPiece.trash = true;
+    }
+    curr.push(newPiece);
+
+    return curr;
+  }, []);
 
   const pieces = [...ARpieces, ...VRpieces];
+  console.log(pieces);
   return pieces;
 }
 
 // test
 // [...Array(1000).keys()].forEach(() => {
-//   const pieces = createNewLevelPieces({ give: 2, self: 1 });
+//   const pieces = createNewLevelPieces();
 //   pieces.forEach((piece, index) => {
 //     if (piece.type === "self" && piece.startIndex === piece.goalIndex) {
 //       console.log(piece, pieces, index);

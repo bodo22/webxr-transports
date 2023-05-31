@@ -14,7 +14,6 @@ export async function onDisconnect(socket, reason) {
 }
 
 function sendHandDataToSockets(sockets, data) {
-  data.fidelity = state.fidelity;
   sockets.forEach((socket) => {
     socket.emit("handData", data);
   });
@@ -29,6 +28,7 @@ function broadcastConnectedUsers() {
     };
   });
   this.io.emit("level", state.level);
+  this.io.emit("fidelity", state.fidelity);
   this.io.emit("connectedUsers", connectedUsers);
   this.io.of("/admin").emit("connectedUsers", connectedUsers);
 }

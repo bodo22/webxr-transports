@@ -7,9 +7,7 @@ import shortUuid from "short-uuid";
 import throttle from "lodash.throttle";
 
 import socket from "@/stores/socketConnection";
-import createNewLevelPieces, {
-  convenientColors,
-} from "@/stores/helpers/createNewLevelPieces";
+import { convenientColors } from "@/stores/helpers/createNewLevelPieces";
 
 export const handViews = ["Pizza", "Ego"];
 
@@ -41,15 +39,13 @@ function getFakeUsers(users) {
   return users.filter(({ socketId }) => !socketId);
 }
 
-const pieces = createNewLevelPieces({ give: 2, self: 1 });
-
 const initialState = {
   socketReady: false,
   handView: handViews[0],
   users: [],
   handData: undefined,
   socket: undefined,
-  pieces,
+  pieces: [],
   debug: {
     boundBoxes: false,
     grid: false,
@@ -60,7 +56,7 @@ const initialState = {
     gizmo: false,
     hands: false,
     piecesPos: false,
-    pieces: false,
+    // pieces: false,
     collide: false,
     pizzaRadius: 0.5,
   },
@@ -191,7 +187,7 @@ const useSocket = create(
   (curr, prev) => {
     if (curr.socketReady && curr.handDataLength && curr.userIdsJoined) {
       let frame = 0;
-      const { users, socket, handData } = useSocket.getState();
+      const { users, socket, handData, fidelity } = useSocket.getState();
       const fps = 30;
       const wait = 1000 / fps;
       function emitFakeHandDatas(fakeHandDatas) {
@@ -211,6 +207,7 @@ const useSocket = create(
             ...user,
             time: Date.now(),
             ...newHandData,
+            fidelity,
           });
           return prev;
         }, []);

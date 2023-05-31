@@ -70,15 +70,15 @@ export default function BasicTabs() {
       )}
       <br />
       <Button onClick={handleReset} variant="contained">Reset</Button>
-      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+      {/* <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
         <Tabs value={variantIndex} onChange={sethandView}>
           {handViews.map((v) => {
             return <Tab label={v} key={`tab-${v}`} />;
           })}
         </Tabs>
-      </Box>
+      </Box> */}
       <div className={`px-16 ${filter}`}>
-        <Slider
+        {/* <Slider
           defaultValue={2}
           step={1}
           track={false}
@@ -95,7 +95,7 @@ export default function BasicTabs() {
           max={6}
           value={fakeUsers.length}
           onChange={setFakeUsers}
-        />
+        /> */}
         <Pizza />
       </div>
       <PiecesProps />

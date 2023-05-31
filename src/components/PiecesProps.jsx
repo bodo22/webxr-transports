@@ -14,7 +14,7 @@ import createNewLevelPieces from "@/stores/helpers/createNewLevelPieces";
 // partly based on
 // https://codesandbox.io/embed/github/pmndrs/leva/tree/main/demo/src/sandboxes/leva-advanced-panels?codemirror=1
 
-const level = ["none", "blob", "gesture", "virtual"];
+const fidelityLevels = [/* "none", */ "blob", "gesture", "virtual"];
 const blobJoint = [
   "wrist",
   "thumb-metacarpal",
@@ -78,8 +78,8 @@ export default function PiecesProps() {
         value: 1,
         options: new Array(8).fill(0).map((_, i) => i + 1),
       },
-      positionThreshold: 0.02,
-      rotationThreshold: 5,
+      positionThreshold: 0.04,
+      rotationThreshold: 10,
     },
     { store: levels }
   );
@@ -87,11 +87,11 @@ export default function PiecesProps() {
     "Fidelity",
     {
       level: {
-        value: level[level.length - 1],
-        options: level,
+        value: fidelityLevels[fidelityLevels.length - 1],
+        options: fidelityLevels,
       },
       blobJoint: {
-        value: blobJoint[11], // 11 = middle-finger-phalanx-proximal
+        value: blobJoint[9], // 11 = middle-finger-phalanx-proximal, 9 = index-tip
         options: blobJoint,
       },
     },
@@ -108,7 +108,7 @@ export default function PiecesProps() {
   }, [setAndEmit, newLevel]);
 
   React.useEffect(() => {
-    const newPieces = createNewLevelPieces({ give: 2, self: 1 });
+    const newPieces = createNewLevelPieces();
     setAndEmit("pieces", newPieces);
   }, [setAndEmit, newLevel.level]);
 
