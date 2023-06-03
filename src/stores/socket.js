@@ -180,6 +180,9 @@ const mutations = (set, get) => {
       socket.emit(key, value);
       set({ [key]: value });
     },
+    log(log) {
+      socket.emit("log", { ...log, timestamp: Date.now() });
+    },
   };
 };
 
@@ -261,6 +264,10 @@ export function useConnectedUsers() {
 export function useFakeUsers() {
   const users = useSocket(({ users }) => users);
   return getFakeUsers(users);
+}
+
+export function useLog() {
+  return useSocket((state) => state.log);
 }
 
 export default useSocket;

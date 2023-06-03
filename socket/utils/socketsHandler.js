@@ -12,6 +12,33 @@ let state = {
 const streams = {};
 const intervals = {};
 
+function getServerState() {
+  return {
+    fidelity: state.fidelity,
+    level: state.level,
+    permutationIndex: state.permutationIndex,
+    pieces: state.pieces.map(
+      ({
+        color,
+        visible,
+        gltfPath,
+        gltfPathGoal,
+        gltfPathDebug,
+        positionGoal,
+        rotationGoal,
+        rotation,
+        position,
+        name,
+        scale,
+        render,
+        ...rest
+      }) => rest
+    ),
+    saveTimestamp: Date.now(),
+    piecesTransforms: state.piecesTransforms.map(({ matrix, ...rest }) => rest),
+  };
+}
+
 export async function onDisconnect(socket, reason) {
   console.log(`socket ${socket.handshake.query.env} disconnected`);
   delete this.sockets[socket.handshake.query.env];
@@ -51,6 +78,10 @@ const broadcastEvents = [
 const syncEventsToServer = ["pieces", "fidelity", "level", "permutationIndex"];
 
 export function onAdminConnect(socket) {
+  streams.admin?.end();
+
+  streams.admin = createWriteStream(`admin.txt`, { flags: "a" });
+
   broadcastConnectedUsers.call(this);
   socket.onAny((eventName, ...args) => {
     if (broadcastEvents.includes(eventName)) {
@@ -88,27 +119,22 @@ export function onAdminConnect(socket) {
     }
   });
   this.io.to("handRoom").emit("pieces", state.pieces);
-}
 
-function isEmitDisposable(data, curr) {
-  let isDisposable = false;
-  const incomingPinchIsOlder =
-    curr?.pinchStart && data.pinchStart < curr.pinchStart;
-  const pinchStartOverlap =
-    curr?.pinchStart && data.pinchStart === curr.pinchStart;
-  if (incomingPinchIsOlder || pinchStartOverlap) {
-    if (incomingPinchIsOlder) {
-      // console.log("incoming is older", curr.pinchStart, data.pinchStart);
-      isDisposable = true;
+  socket.on("log", (log) => {
+    try {
+      streams.admin.write(
+        JSON.stringify({ log, serverState: getServerState() }) + "\n"
+      );
+    } catch (err) {
+      console.log(
+        "admin log write failed!",
+        streams.length,
+        Object.keys(streams),
+        streams.admin
+      );
+      console.error(err);
     }
-    const incomingPinchHasDifferentUserId =
-      curr?.userId && data.userId !== curr.userId;
-    if (pinchStartOverlap && incomingPinchHasDifferentUserId) {
-      // console.log("pinchstart overlap but diff userId", curr, data);
-      isDisposable = true;
-    }
-  }
-  return isDisposable;
+  });
 }
 
 function updatePiecesProps(data, index) {
@@ -174,6 +200,53 @@ export async function onConnect(socket) {
     sendHandDataToSockets(otherSockets, data);
   });
 
+  function saveLog(log) {
+    try {
+      streams[socket.handshake.query.env].write(
+        JSON.stringify({ log, serverState: getServerState() }) + "\n"
+      );
+    } catch (err) {
+      console.log(
+        "log write failed!",
+        streams.length,
+        Object.keys(streams),
+        streams[socket.handshake.query.env]
+      );
+      console.error(err);
+    }
+  }
+
+  function isEmitDisposable(data, curr) {
+    let isDisposable = false;
+    const incomingPinchIsOlder =
+      curr?.pinchStart && data.pinchStart < curr.pinchStart;
+    const pinchStartOverlap =
+      curr?.pinchStart && data.pinchStart === curr.pinchStart;
+    if (incomingPinchIsOlder || pinchStartOverlap) {
+      if (incomingPinchIsOlder) {
+        saveLog({
+          isDisposable: true,
+          reason: "incomingPinchIsOlder",
+          data,
+          curr,
+        });
+        isDisposable = true;
+      }
+      const incomingPinchHasDifferentUserId =
+        curr?.userId && data.userId !== curr.userId;
+      if (pinchStartOverlap && incomingPinchHasDifferentUserId) {
+        saveLog({
+          isDisposable: true,
+          reason: "pinchStartOverlap",
+          data,
+          curr,
+        });
+        isDisposable = true;
+      }
+    }
+    return isDisposable;
+  }
+
   socket.on("pinchData", (data) => {
     const index = state.piecesTransforms.findIndex((p) => p.name === data.name);
     const curr = state.piecesTransforms[index];
@@ -195,48 +268,6 @@ export async function onConnect(socket) {
       `${socket.handshake.query.env}.txt`,
       { flags: "a" }
     );
-
-    function saveLog(log) {
-      const serverState = {
-        fidelity: state.fidelity,
-        level: state.level,
-        permutationIndex: state.permutationIndex,
-        pieces: state.pieces.map(
-          ({
-            color,
-            visible,
-            gltfPath,
-            gltfPathGoal,
-            gltfPathDebug,
-            positionGoal,
-            rotationGoal,
-            rotation,
-            position,
-            name,
-            scale,
-            render,
-            ...rest
-          }) => rest
-        ),
-        saveTimestamp: Date.now(),
-        piecesTransforms: state.piecesTransforms.map(
-          ({ matrix, ...rest }) => rest
-        ),
-      };
-      try {
-        streams[socket.handshake.query.env].write(
-          JSON.stringify({ log, serverState }) + "\n"
-        );
-      } catch (err) {
-        console.log(
-          "log write failed!",
-          streams.length,
-          Object.keys(streams),
-          streams[socket.handshake.query.env]
-        );
-        console.error(err);
-      }
-    }
 
     socket.on("log", (log) => {
       saveLog(log);

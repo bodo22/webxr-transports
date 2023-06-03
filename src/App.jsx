@@ -15,6 +15,7 @@ import useSocket, {
   useFakeUsers,
   useInlineUsers,
   useXRUsers,
+  useLog,
 } from "@/stores/socket";
 import Pizza from "@/components/Pizza";
 import PiecesProps, { blobJoint } from "@/components/PiecesProps";
@@ -55,15 +56,17 @@ export default function BasicTabs() {
   const permutationIndex = useSocket((state) => state.permutationIndex);
   const fidelity = useSocket((state) => state.fidelity);
   const setAndEmit = useSocket((state) => state.setAndEmit);
-
+  const log = useLog();
   const variantIndex = handViews.findIndex((v) => v === handView);
   const filter = handView !== "Pizza" ? "grayscale" : "";
 
   const handleReset = () => {
+    log({ type: "resetButtonClick" });
     socket.emit("reset");
   };
 
   const handlePermutation = (permutation, index) => {
+    log({ type: "permutationButtonClick", permutation, index });
     setAndEmit("permutationIndex", index);
     setAndEmit("fidelity", {
       ...permutation.fidelity[0],
@@ -71,11 +74,13 @@ export default function BasicTabs() {
     });
   };
   const handleFidelity = (level) => {
+    log({ type: "fidelityButtonClick", level });
     setAndEmit("fidelity", { level, blobJoint: blobJoint[9] });
   };
 
   const handleNewLevel = () => {
-    handleReset();
+    log({ type: "newLevelButtonClick" });
+    socket.emit("reset");
     const newPieces = createNewLevelPieces();
     setAndEmit("pieces", newPieces);
   };
