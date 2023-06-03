@@ -6,6 +6,8 @@ import Box from "@mui/material/Box";
 import Slider from "@mui/material/Slider";
 import PowerIcon from "@mui/icons-material/Power";
 import PowerOffIcon from "@mui/icons-material/PowerOff";
+import Divider from "@mui/material/Divider";
+import { Button } from "@mui/material";
 
 import useSocket, {
   handViews,
@@ -15,8 +17,8 @@ import useSocket, {
   useXRUsers,
 } from "@/stores/socket";
 import Pizza from "@/components/Pizza";
-import PiecesProps from "@/components/PiecesProps";
-import { Button } from "@mui/material";
+import PiecesProps, { blobJoint } from "@/components/PiecesProps";
+import createNewLevelPieces from "@/stores/helpers/createNewLevelPieces";
 
 function TabPanel(props) {
   const { children, value, index } = props;
@@ -48,13 +50,34 @@ export default function BasicTabs() {
   const inlineUsers = useInlineUsers();
   const xrUsers = useXRUsers();
   const users = useSocket((state) => state.users);
+  const permutations = useSocket((state) => state.permutations);
   const setFakeUsers = useSocket((state) => state.setFakeUsers);
+  const permutationIndex = useSocket((state) => state.permutationIndex);
+  const fidelity = useSocket((state) => state.fidelity);
+  const setAndEmit = useSocket((state) => state.setAndEmit);
 
   const variantIndex = handViews.findIndex((v) => v === handView);
   const filter = handView !== "Pizza" ? "grayscale" : "";
 
   const handleReset = () => {
     socket.emit("reset");
+  };
+
+  const handlePermutation = (permutation, index) => {
+    setAndEmit("permutationIndex", index);
+    setAndEmit("fidelity", {
+      ...permutation.fidelity[0],
+      blobJoint: blobJoint[9],
+    });
+  };
+  const handleFidelity = (level) => {
+    setAndEmit("fidelity", { level, blobJoint: blobJoint[9] });
+  };
+
+  const handleNewLevel = () => {
+    handleReset();
+    const newPieces = createNewLevelPieces();
+    setAndEmit("pieces", newPieces);
   };
 
   return (
@@ -69,7 +92,37 @@ export default function BasicTabs() {
         <PowerOffIcon color="error" />
       )}
       <br />
-      <Button onClick={handleReset} variant="contained">Reset</Button>
+      <Box sx={{ p: 5, display: "flex", justifyContent: "space-evenly" }}>
+        <Button onClick={handleNewLevel} variant="contained">
+          New Level
+        </Button>
+        <Button color="error" onClick={handleReset} variant="contained">
+          Reset Level
+        </Button>
+      </Box>
+      <Box sx={{ p: 5, display: "flex", justifyContent: "space-evenly" }}>
+        {permutations?.map((perm, index) => {
+          return (
+            <Button
+              key={`perm-${perm.__comment__order}`}
+              onClick={() => handlePermutation(perm, index)}
+              variant={permutationIndex === index ? "contained" : "outlined"}
+            >{`Permutation ${index + 1}`}</Button>
+          );
+        })}
+      </Box>
+      <Box sx={{ p: 5, display: "flex", justifyContent: "space-evenly" }}>
+        {typeof permutationIndex === "number" &&
+          permutations?.[permutationIndex]?.fidelity?.map((f) => {
+            return (
+              <Button
+                key={`fidelity-${f.level}`}
+                onClick={() => handleFidelity(f.level)}
+                variant={f.level === fidelity?.level ? "contained" : "outlined"}
+              >{`Fidelity: ${f.level}`}</Button>
+            );
+          })}
+      </Box>
       {/* <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
         <Tabs value={variantIndex} onChange={sethandView}>
           {handViews.map((v) => {

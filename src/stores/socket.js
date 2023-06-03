@@ -46,6 +46,9 @@ const initialState = {
   handData: undefined,
   socket: undefined,
   pieces: [],
+  fidelity: { level: "virtual", blobJoint: "index-finger-tip" },
+  permutations: [],
+  permutationIndex: [],
   debug: {
     boundBoxes: false,
     grid: false,
@@ -58,6 +61,7 @@ const initialState = {
     piecesPos: false,
     // pieces: false,
     collide: false,
+    singlePlayer: false,
     pizzaRadius: 0.5,
   },
 };
@@ -136,6 +140,11 @@ const mutations = (set, get) => {
     .then((handData) => {
       set({ handData });
     });
+  fetch("./handData/permutations.json")
+    .then((response) => response.json())
+    .then(({ permutations }) => {
+      set({ permutations });
+    });
 
   function step(timestamp) {
     const { rafCallback } = get();
@@ -187,7 +196,7 @@ const useSocket = create(
   (curr, prev) => {
     if (curr.socketReady && curr.handDataLength && curr.userIdsJoined) {
       let frame = 0;
-      const { users, socket, handData, fidelity } = useSocket.getState();
+      const { users, socket, handData } = useSocket.getState();
       const fps = 30;
       const wait = 1000 / fps;
       function emitFakeHandDatas(fakeHandDatas) {
@@ -199,9 +208,25 @@ const useSocket = create(
           if (user.isSessionSupported || user.userId === "spectator") {
             return prev; // this user will be generating their own hand data or they are just watching
           }
+          const { fidelity } = useSocket.getState();
           const frameOffset = index * 90;
           const userFrame = frame + frameOffset;
           const userFrameHandData = readArrayItem(handData, userFrame);
+          userFrameHandData.joints = Object.entries(
+            userFrameHandData.joints
+          ).reduce((acc, [handedness, joints]) => {
+            acc[handedness] = Object.values(joints).map(
+              ({ transformMatrix, radius }) => {
+                return {
+                  transformMatrix: transformMatrix.map(
+                    (v) => Math.round(v * 1000) / 1000
+                  ),
+                  radius: Math.round(radius * 1000) / 1000,
+                };
+              }
+            );
+            return acc;
+          }, {});
           const newHandData = { ...userFrameHandData };
           prev.push({
             ...user,

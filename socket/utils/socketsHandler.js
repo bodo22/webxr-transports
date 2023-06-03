@@ -1,15 +1,21 @@
 import { Matrix4, Quaternion, Vector3 } from "three";
-
+import { createWriteStream } from "fs";
 let state = {
   pieces: [],
   piecesTransforms: [],
-  fidelity: { level: "virtual" },
+  fidelity: { level: "virtual", blobJoint: "index-finger-tip" },
   level: { studyMode: true },
+  permutations: [],
+  permutationIndex: 0,
 };
 
+const streams = {};
+const intervals = {};
+
 export async function onDisconnect(socket, reason) {
-  console.log(`socket ${socket.id} disconnected`);
-  delete this.sockets[socket.id];
+  console.log(`socket ${socket.handshake.query.env} disconnected`);
+  delete this.sockets[socket.handshake.query.env];
+  streams[socket.handshake.query.env]?.end();
   broadcastConnectedUsers.call(this);
 }
 
@@ -42,7 +48,7 @@ const broadcastEvents = [
   "level",
 ];
 
-const syncEventsToServer = ["pieces", "fidelity", "level"];
+const syncEventsToServer = ["pieces", "fidelity", "level", "permutationIndex"];
 
 export function onAdminConnect(socket) {
   broadcastConnectedUsers.call(this);
@@ -56,10 +62,13 @@ export function onAdminConnect(socket) {
     switch (eventName) {
       case "reset": {
         state.piecesTransforms = [];
-        const pieces = state.pieces.map((piece) => ({
-          ...piece,
-          key: `${piece.name}-${Date.now()}`,
-        }));
+        const now = Date.now();
+        const pieces = state.pieces.map(
+          ({ trashed, success, pinchStart, ...piece }) => ({
+            ...piece,
+            key: `${piece.name}-${now}`,
+          })
+        );
         this.io.to("handRoom").emit("pieces", pieces);
         break;
       }
@@ -113,12 +122,22 @@ function updatePiecesProps(data, index) {
 }
 
 export async function onConnect(socket) {
-  console.log(`socket ${socket.id} connected`);
+  console.log(`socket ${socket.handshake.query.env} connected`);
   socket.on("disconnect", onDisconnect.bind(this, socket));
   socket.on("error", console.error.bind(console));
   socket.on("message", console.log.bind(console));
 
-  this.sockets[socket.id] = socket;
+  socket.on("connect", () => {
+    socket.sendBuffer = [];
+  });
+
+  const notSpectator = socket.handshake.query.env !== "spectator";
+
+  this.sockets[socket.handshake.query.env]?.disconnect(true);
+  streams[socket.handshake.query.env]?.end();
+
+  this.sockets[socket.handshake.query.env] = socket;
+
   socket.emit("userId", socket.handshake.query.env);
   socket.join("handRoom");
 
@@ -149,7 +168,7 @@ export async function onConnect(socket) {
 
   socket.on("handData", (data) => {
     const otherSockets = Object.entries(this.sockets)
-      .filter(([socketId]) => socketId !== socket.id)
+      .filter(([socketId]) => socketId !== socket.handshake.query.env)
       .map(([_, s]) => s);
 
     sendHandDataToSockets(otherSockets, data);
@@ -165,6 +184,67 @@ export async function onConnect(socket) {
     updatePiecesProps(data, index);
 
     socket.to("handRoom").emit("pinchData", data);
-    // this.io.to("handRoom").emit("pinchData", data);
   });
+
+  socket.on("pieceStateData", (data) => {
+    socket.to("handRoom").emit("pieceStateData", data);
+  });
+
+  if (notSpectator) {
+    streams[socket.handshake.query.env] = createWriteStream(
+      `${socket.handshake.query.env}.txt`,
+      { flags: "a" }
+    );
+
+    function saveLog(log) {
+      const serverState = {
+        fidelity: state.fidelity,
+        level: state.level,
+        permutationIndex: state.permutationIndex,
+        pieces: state.pieces.map(
+          ({
+            color,
+            visible,
+            gltfPath,
+            gltfPathGoal,
+            gltfPathDebug,
+            positionGoal,
+            rotationGoal,
+            rotation,
+            position,
+            name,
+            scale,
+            render,
+            ...rest
+          }) => rest
+        ),
+        saveTimestamp: Date.now(),
+        piecesTransforms: state.piecesTransforms.map(
+          ({ matrix, ...rest }) => rest
+        ),
+      };
+      try {
+        streams[socket.handshake.query.env].write(
+          JSON.stringify({ log, serverState }) + "\n"
+        );
+      } catch (err) {
+        console.log(
+          "log write failed!",
+          streams.length,
+          Object.keys(streams),
+          streams[socket.handshake.query.env]
+        );
+        console.error(err);
+      }
+    }
+
+    socket.on("log", (log) => {
+      saveLog(log);
+    });
+
+    clearInterval(intervals[socket.handshake.query.env]);
+    intervals[socket.handshake.query.env] = setInterval(() => {
+      saveLog({ stateOnly: true });
+    }, 3000);
+  }
 }

@@ -30,11 +30,14 @@ export const oldOutput = [
 ];
 
 function getTransformFor(index, env, suffix = "") {
+
+  const z = suffix === "Goal" ? 0.3 : 0.25
+  const y = suffix === "Goal" ? -0.35 : -0.25
   return {
     [`position${suffix}`]: [
-      -0.2 + index * 0.2,
-      suffix === "Goal" ? -0.35 : -0.25,
-      env === "AR" ? 0.25 : -0.25,
+      -0.35 + index * 0.35,
+      y,
+       env === "AR" ? z : -z,
     ],
     [`rotation${suffix}`]: [
       suffix === "Goal" ? 0 : MathUtils.degToRad(random(-35, 35)),
@@ -188,7 +191,6 @@ export default function createNewLevelPieces(
   }, []);
 
   const pieces = [...ARpieces, ...VRpieces];
-  console.log(pieces);
   return pieces;
 }
 

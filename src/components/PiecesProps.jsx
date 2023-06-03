@@ -9,13 +9,11 @@ import {
   button,
 } from "leva";
 
-import createNewLevelPieces from "@/stores/helpers/createNewLevelPieces";
-
 // partly based on
 // https://codesandbox.io/embed/github/pmndrs/leva/tree/main/demo/src/sandboxes/leva-advanced-panels?codemirror=1
 
 const fidelityLevels = [/* "none", */ "blob", "gesture", "virtual"];
-const blobJoint = [
+export const blobJoint = [
   "wrist",
   "thumb-metacarpal",
   "thumb-phalanx-proximal",
@@ -71,46 +69,26 @@ export default function PiecesProps() {
     {
       studyMode: true,
       testMode: false,
-      testReset: button(() => {
-        socket.emit("level", { ...newLevel, testReset: true });
-      }),
-      level: {
-        value: 1,
-        options: new Array(8).fill(0).map((_, i) => i + 1),
-      },
+      // testReset: button(() => {
+      //   socket.emit("level", { ...newLevel, testReset: true });
+      // }),
+      // level: {
+      //   value: 1,
+      //   options: new Array(8).fill(0).map((_, i) => i + 1),
+      // },
       positionThreshold: 0.04,
       rotationThreshold: 10,
     },
     { store: levels }
   );
-  const newFidelity = useControls(
-    "Fidelity",
-    {
-      level: {
-        value: fidelityLevels[fidelityLevels.length - 1],
-        options: fidelityLevels,
-      },
-      blobJoint: {
-        value: blobJoint[9], // 11 = middle-finger-phalanx-proximal, 9 = index-tip
-        options: blobJoint,
-      },
-    },
-    { store: levels }
-  );
+
   React.useEffect(() => {
     setAndEmit("debug", newDebug);
   }, [setAndEmit, newDebug]);
-  React.useEffect(() => {
-    setAndEmit("fidelity", newFidelity);
-  }, [setAndEmit, newFidelity]);
+
   React.useEffect(() => {
     setAndEmit("level", newLevel);
   }, [setAndEmit, newLevel]);
-
-  React.useEffect(() => {
-    const newPieces = createNewLevelPieces();
-    setAndEmit("pieces", newPieces);
-  }, [setAndEmit, newLevel.level]);
 
   return (
     <>
