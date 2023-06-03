@@ -44,11 +44,11 @@ new DuplexConnection({
   secure: process.env.SECURE,
 });
 
-new DuplexConnection({
-  port: 3001,
-  parser: 'msgpack',
-  onConnect,
-});
+// new DuplexConnection({
+//   port: 3001,
+//   parser: 'msgpack',
+//   onConnect,
+// });
 
 // io.listen(port);
 // console.log(`socket server listening at :${port}`);
