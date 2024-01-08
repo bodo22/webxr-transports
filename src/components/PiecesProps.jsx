@@ -65,7 +65,7 @@ export default function PiecesProps() {
   const levels = useCreateStore();
   const newDebug = useControls("debug", debug, { store: storeDebug });
   const newLevel = useControls(
-    "Level",
+    "Puzzle",
     {
       studyMode: true,
       testMode: false,

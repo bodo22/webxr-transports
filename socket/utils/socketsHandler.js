@@ -48,7 +48,10 @@ export async function onDisconnect(socket, reason) {
 
 function sendHandDataToSockets(sockets, data) {
   sockets.forEach((socket) => {
-    socket.emit("handData", data);
+    socket.emit("handData", {
+      ...data,
+      timestamp: Date.now(),
+    });
   });
 }
 
@@ -159,10 +162,14 @@ export async function onConnect(socket) {
 
   const notSpectator = socket.handshake.query.env !== "spectator";
 
+  // if (notSpectator) {
   this.sockets[socket.handshake.query.env]?.disconnect(true);
   streams[socket.handshake.query.env]?.end();
 
   this.sockets[socket.handshake.query.env] = socket;
+  // } else {
+  //   this.sockets[socket.id] = socket;
+  // }
 
   socket.emit("userId", socket.handshake.query.env);
   socket.join("handRoom");

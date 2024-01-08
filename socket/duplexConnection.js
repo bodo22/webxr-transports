@@ -6,6 +6,14 @@ import express from "express";
 import cors from "cors";
 import { Server } from "socket.io";
 import msgpackParser from "socket.io-msgpack-parser";
+import Cache from "file-system-cache";
+
+const cache = Cache.default({
+  basePath: "./.cache", // Optional. Path where cache files are stored (default).
+  // ns: "my-namespace", // Optional. A grouping namespace for items.
+});
+
+console.log(cache.getSync("key"));
 
 const parserMap = {
   default: "",
@@ -20,8 +28,8 @@ export default class DuplexConnection {
     this.port = options.port;
     if (this.options.secure) {
       this.server = https.createServer({
-        key: fs.readFileSync(path.resolve(__dirname, "key.pem")),
-        cert: fs.readFileSync(path.resolve(__dirname, "cert.pem")),
+        key: cache.getSync("key"),
+        cert: cache.getSync("cert"),
       });
     } else {
       this.server = http.createServer(this.app);

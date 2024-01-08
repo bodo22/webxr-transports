@@ -46,12 +46,12 @@ function endAngle(d) {
   return d.endAngle + (Math.PI / d.data.length) * (d.data.length - 1);
 }
 
-const width = 500,
+const width = 300,
   height = width;
-const originX = 250;
-const originY = 250;
-const innerCircleRadius = 100;
-const outerCircleRadius = 150;
+const originX = width / 2;
+const originY = width / 2;
+const innerCircleRadius = width / 3;
+const outerCircleRadius = width / 3;
 
 const arcGenerator = d3
   .arc()

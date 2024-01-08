@@ -99,10 +99,10 @@ export default function BasicTabs() {
       <br />
       <Box sx={{ p: 5, display: "flex", justifyContent: "space-evenly" }}>
         <Button onClick={handleNewLevel} variant="contained">
-          New Level
+          New Puzzle
         </Button>
         <Button color="error" onClick={handleReset} variant="contained">
-          Reset Level
+          Reset Puzzle
         </Button>
       </Box>
       <Box sx={{ p: 5, display: "flex", justifyContent: "space-evenly" }}>
@@ -135,8 +135,9 @@ export default function BasicTabs() {
           })}
         </Tabs>
       </Box> */}
-      <div className={`px-16 ${filter}`}>
-        {/* <Slider
+      <div className={`px-16 ${filter} flex w-full`}>
+        <div className={`px-16 inline-block`}>Fake Users:</div>
+        <Slider
           defaultValue={2}
           step={1}
           track={false}
@@ -153,7 +154,8 @@ export default function BasicTabs() {
           max={6}
           value={fakeUsers.length}
           onChange={setFakeUsers}
-        /> */}
+        />
+        <div className={`pl-16 pt-32 inline-block`}>Pizza Positions:</div>
         <Pizza />
       </div>
       <PiecesProps />

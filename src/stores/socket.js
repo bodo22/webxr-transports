@@ -39,6 +39,7 @@ function getFakeUsers(users) {
   return users.filter(({ socketId }) => !socketId);
 }
 
+let firstFakeSendTime;
 const initialState = {
   socketReady: false,
   handView: handViews[0],
@@ -120,6 +121,7 @@ const mutations = (set, get) => {
     const newFakeUsers = new Array(numFakeUsers)
       .fill(null)
       .map(() => ({ userId: shortUuid.generate() }));
+    // .map((_, index) => ({ userId: index % 2 ? 'AR' :'VR' }));
     const newUsers = oldConnectedUsers.concat(newFakeUsers);
     setUsers(newUsers);
   }
@@ -134,11 +136,56 @@ const mutations = (set, get) => {
     })
     .on("connectedUsers", updateConnectedUsers);
 
-  fetch("./handData/handData-gesture.json")
+  // fetch("./handData/recorded-03-10-23.json")
+  // fetch("./handData/recorded-04-10-23-morning.json")
+  fetch("./handData/recorded-anne.json")
+    // fetch("./handData/recorded-04-10-23_13:30.json")
+    // fetch("./handData/handData-gesture.json")
     // fetch("./handData/handData-gesture-wrist-base.json") // use -2 to select pose for gesture fidelity
     .then((response) => response.json())
-    .then((handData) => {
-      set({ handData });
+    .then((rawHandData) => {
+      // const first10 = [...handData.slice(0, 10)]
+      // set({ handData: [...first10, ...first10, ...first10, ...first10, ...first10, ...handData] /* .slice(-5, -4) */ });
+      const startFrameIndex = 650;
+      const endFrameIndex = rawHandData.findIndex((rhd) => {
+        return (
+          rhd.predictedDisplayTime -
+            rawHandData[startFrameIndex].predictedDisplayTime >
+          10000
+        );
+      });
+      // console.log(startFrameIndex, endFrameIndex);
+      set({ handData: rawHandData.slice(startFrameIndex, endFrameIndex) });
+      // const { handData } = get();
+      // console.log(
+      //   handData[0].predictedDisplayTime,
+      //   handData[handData.length - 1].predictedDisplayTime
+      // );
+      // 59285.723 - 44806.512
+      // set({ handData: handData.slice(300, -500)});
+      // TODO: remove cycle through handData with timeout waiting on predictedDisplayTime
+      let frame = 0;
+      function step() {
+        const { rafCallback, handData } = get();
+        const userFrameHandData = readArrayItem(handData, frame);
+        const nextUserFrameHandData = readArrayItem(handData, frame + 1);
+        let timeout = 0;
+        if (frame !== 0) {
+          timeout =
+            nextUserFrameHandData.predictedDisplayTime -
+            userFrameHandData.predictedDisplayTime;
+        }
+        // console.log(handData.length, frame, timeout);
+        frame = frame + 1 === handData.length ? 0 : frame + 1;
+        setTimeout(() => {
+          if (typeof rafCallback === "function") {
+            rafCallback();
+          }
+          step();
+        }, timeout);
+      }
+
+      step();
     });
   fetch("./handData/permutations.json")
     .then((response) => response.json())
@@ -146,15 +193,17 @@ const mutations = (set, get) => {
       set({ permutations });
     });
 
-  function step(timestamp) {
-    const { rafCallback } = get();
-    if (typeof rafCallback === "function") {
-      rafCallback(timestamp);
-    }
-    window.requestAnimationFrame(step);
-  }
+  // function step(timestamp) {
+  //   const { rafCallback } = get();
+  //   if (typeof rafCallback === "function") {
+  //     rafCallback(timestamp);
+  //   }
+  //   // setTimeout(() => {
+  //   window.requestAnimationFrame(step);
+  //   // }, 50)
+  // }
 
-  window.requestAnimationFrame(step);
+  // window.requestAnimationFrame(step);
 
   return {
     socket,
@@ -206,7 +255,17 @@ const useSocket = create(
         socket.emit("fakeHandDatas", fakeHandDatas);
       }
       const throttledEmitFakeHandDatas = throttle(emitFakeHandDatas, wait);
-      function rafCallback() {
+      function rafCallback(timestamp) {
+        // if (!firstFakeSendTime) {
+        //   firstFakeSendTime = timestamp;
+        // }
+        // console.log(timestamp, firstFakeSendTime, handData[frame].predictedDisplayTime, handData[0].predictedDisplayTime, timestamp - firstFakeSendTime, handData[frame].predictedDisplayTime - handData[0].predictedDisplayTime);
+        // if (timestamp - firstFakeSendTime < handData[frame].predictedDisplayTime - handData[0].predictedDisplayTime) {
+        //   console.log('send');
+        // } else {
+        //   console.log('dont send');
+        //   return
+        // }
         const fakeHandDatas = users.reduce((prev, user, index) => {
           if (user.isSessionSupported || user.userId === "spectator") {
             return prev; // this user will be generating their own hand data or they are just watching
@@ -240,6 +299,7 @@ const useSocket = create(
           return prev;
         }, []);
         throttledEmitFakeHandDatas(fakeHandDatas);
+        // emitFakeHandDatas(fakeHandDatas);
         frame++;
       }
 
