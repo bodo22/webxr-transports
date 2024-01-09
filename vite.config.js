@@ -72,7 +72,7 @@ export default defineConfig(async () => {
       https: { key, cert },
       proxy: {
         "/socket.io": {
-          target: "https://localhost:3003",
+          target: "http://localhost:3003",
           ws: true,
           secure: false,
         },
