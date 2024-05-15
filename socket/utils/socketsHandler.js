@@ -1,52 +1,17 @@
 import { Matrix4, Quaternion, Vector3 } from "three";
-import { createWriteStream } from "fs";
-let state = {
-  pieces: [],
-  piecesTransforms: [],
-  fidelity: { level: "virtual", blobJoint: "index-finger-tip" },
-  level: { studyMode: true },
-  permutations: [],
-  permutationIndex: 0,
-};
 
-const streams = {};
+import { createStream, endStream, saveLog } from "./logging.js";
+import state from "./state.js";
 const intervals = {};
-
-function getServerState() {
-  return {
-    fidelity: state.fidelity,
-    level: state.level,
-    permutationIndex: state.permutationIndex,
-    pieces: state.pieces.map(
-      ({
-        color,
-        visible,
-        gltfPath,
-        gltfPathGoal,
-        gltfPathDebug,
-        positionGoal,
-        rotationGoal,
-        rotation,
-        position,
-        name,
-        scale,
-        render,
-        ...rest
-      }) => rest
-    ),
-    saveTimestamp: Date.now(),
-    piecesTransforms: state.piecesTransforms.map(({ matrix, ...rest }) => rest),
-  };
-}
 
 export async function onDisconnect(socket, reason) {
   console.log(`socket ${socket.handshake.query.env} disconnected`);
   delete this.sockets[socket.handshake.query.env];
-  streams[socket.handshake.query.env]?.end();
-  broadcastConnectedUsers.call(this);
+  endStream(socket.handshake.query.env);
+  broadcastConnectedUsers(this.sockets, this.io);
 }
 
-function sendHandDataToSockets(sockets, data) {
+export function sendHandDataToSockets(sockets, data) {
   sockets.forEach((socket) => {
     socket.emit("handData", {
       ...data,
@@ -55,134 +20,99 @@ function sendHandDataToSockets(sockets, data) {
   });
 }
 
-function broadcastConnectedUsers() {
-  const connectedUsers = Object.values(this.sockets).map((socket) => {
+function broadcastConnectedUsers(sockets, io) {
+  const connectedUsers = Object.values(sockets).map((socket) => {
     return {
       socketId: socket.id,
       userId: socket.handshake.query.env,
       isSessionSupported: socket.handshake.query.isSessionSupported === "true",
     };
   });
-  this.io.emit("level", state.level);
-  this.io.emit("fidelity", state.fidelity);
-  this.io.emit("connectedUsers", connectedUsers);
-  this.io.of("/admin").emit("connectedUsers", connectedUsers);
+  io.emit("level", state.level);
+  io.emit("fidelity", state.fidelity);
+  io.emit("connectedUsers", connectedUsers);
+  io.of("/admin").emit("connectedUsers", connectedUsers);
 }
-const broadcastEvents = [
-  "userUpdate",
-  "reset",
-  "handView",
-  "pieces",
-  "debug",
-  "fidelity",
-  "level",
-];
 
-const syncEventsToServer = ["pieces", "fidelity", "level", "permutationIndex"];
-
-export function onAdminConnect(socket) {
-  streams.admin?.end();
-
-  streams.admin = createWriteStream(`admin.txt`, { flags: "a" });
-
-  broadcastConnectedUsers.call(this);
-  socket.onAny((eventName, ...args) => {
-    if (broadcastEvents.includes(eventName)) {
-      this.io.to("handRoom").emit(eventName, ...args);
-    }
-    if (syncEventsToServer.includes(eventName)) {
-      state[eventName] = args[0];
-    }
-    switch (eventName) {
-      case "reset": {
-        state.piecesTransforms = [];
-        const now = Date.now();
-        const pieces = state.pieces.map(
-          ({ trashed, success, pinchStart, ...piece }) => ({
-            ...piece,
-            key: `${piece.name}-${now}`,
-          })
-        );
-        this.io.to("handRoom").emit("pieces", pieces);
-        break;
-      }
-      case "userUpdate": {
-        socket.emit("userId", socket.handshake.query.env);
-        break;
-      }
-      case "fakeHandDatas": {
-        args[0].forEach((data) => {
-          // send data for fake clients & clients that don't support WebXR sessions
-          sendHandDataToSockets(Object.values(this.sockets), data);
-        });
-        break;
-      }
-      default:
-        break;
-    }
-  });
-  this.io.to("handRoom").emit("pieces", state.pieces);
-
-  socket.on("log", (log) => {
-    try {
-      streams.admin.write(
-        JSON.stringify({ log, serverState: getServerState() }) + "\n"
+function isEmitDisposable(pinchData, pinchCurr) {
+  let isDisposable = false;
+  const incomingPinchIsOlder =
+    pinchCurr?.pinchStart && pinchData.pinchStart < pinchCurr.pinchStart;
+  const pinchStartOverlap =
+    pinchCurr?.pinchStart && pinchData.pinchStart === pinchCurr.pinchStart;
+  if (incomingPinchIsOlder || pinchStartOverlap) {
+    if (incomingPinchIsOlder) {
+      saveLog(
+        {
+          isDisposable: true,
+          reason: "incomingPinchIsOlder",
+          pinchData,
+          pinchCurr,
+        },
+        pinchData.name
       );
-    } catch (err) {
-      console.log(
-        "admin log write failed!",
-        streams.length,
-        Object.keys(streams),
-        streams.admin
-      );
-      console.error(err);
+      isDisposable = true;
     }
-  });
+    const incomingPinchHasDifferentUserId =
+      pinchCurr?.userId && pinchData.userId !== pinchCurr.userId;
+    if (pinchStartOverlap && incomingPinchHasDifferentUserId) {
+      saveLog(
+        {
+          isDisposable: true,
+          reason: "pinchStartOverlap",
+          pinchData,
+          pinchCurr,
+        },
+        pinchData.name
+      );
+      isDisposable = true;
+    }
+  }
+  return isDisposable;
 }
 
-function updatePiecesProps(data, index) {
-  const newPiecesTransforms = [...state.piecesTransforms];
-  newPiecesTransforms.splice(
-    index === -1 ? newPiecesTransforms.length : index,
-    index === -1 ? 0 : 1,
-    data
-  );
-  state.piecesTransforms = newPiecesTransforms;
+const handleHandData = (data, userId, sockets) => {
+  const otherSockets = Object.entries(sockets)
+    .filter(([socketId]) => socketId !== userId)
+    .map(([_, s]) => s);
+
+  sendHandDataToSockets(otherSockets, data);
+};
+
+const handlePinchData = (pinchData, socket) => {
+  const pieceIndex = state.pieces.findIndex((p) => p.name === pinchData.name);
+  const pieceCurr = state.pieces[pieceIndex];
+  if (isEmitDisposable(pinchData, pieceCurr)) {
+    return;
+  }
+
+  const newPieces = [...state.pieces];
+  newPieces[pieceIndex].pinchData = pinchData;
+  state.pieces = newPieces;
+  socket.to("handRoom").emit("pinchData", pinchData);
+};
+
+const handlePieceStateData = (pieceStateData, socket) => {
+  const pieceIndex = state.pieces.findIndex((p) => p.name === pieceStateData.name);
+  const pieceCurr = state.pieces[pieceIndex];
+  const newPieces = [...state.pieces];
+  newPieces[pieceIndex] = {
+    ...pieceCurr,
+    ...pieceStateData,
+  }
+  state.pieces = newPieces;
+  socket.to("handRoom").emit("pieceStateData", pieceStateData);
 }
 
-export async function onConnect(socket) {
-  console.log(`socket ${socket.handshake.query.env} connected`);
-  socket.on("disconnect", onDisconnect.bind(this, socket));
-  socket.on("error", console.error.bind(console));
-  socket.on("message", console.log.bind(console));
-
-  socket.on("connect", () => {
-    socket.sendBuffer = [];
-  });
-
-  const notSpectator = socket.handshake.query.env !== "spectator";
-
-  // if (notSpectator) {
-  this.sockets[socket.handshake.query.env]?.disconnect(true);
-  streams[socket.handshake.query.env]?.end();
-
-  this.sockets[socket.handshake.query.env] = socket;
-  // } else {
-  //   this.sockets[socket.id] = socket;
-  // }
-
-  socket.emit("userId", socket.handshake.query.env);
-  socket.join("handRoom");
-
-  broadcastConnectedUsers.call(this);
-  const initialPiecesProps = state.pieces.map((piece) => {
-    const initialPinchTransform = state.piecesTransforms.find(
+const getPiecesProps = () => {
+  return state.pieces.map((piece) => {
+    const initialPiecePinchData = state.pieces.find(
       (p) => p.name === piece.name
-    );
+    ).pinchData;
     let newProps = {};
-    if (initialPinchTransform) {
+    if (initialPiecePinchData) {
       const matrix = new Matrix4();
-      matrix.elements = initialPinchTransform.matrix;
+      matrix.elements = initialPiecePinchData.matrix;
       newProps = {
         position: new Vector3(),
         quaternion: new Quaternion(),
@@ -197,92 +127,46 @@ export async function onConnect(socket) {
     }, {});
     return { ...piece, ...props };
   });
+};
+
+export async function onConnect(socket) {
+  const userId = socket.handshake.query.env;
+  console.log(`socket ${userId} connected`);
+  socket.on("disconnect", onDisconnect.bind(this, socket));
+  socket.on("error", console.error.bind(console));
+  socket.on("message", console.log.bind(console));
+
+  socket.on("connect", () => {
+    socket.sendBuffer = [];
+  });
+
+  const notSpectator = userId !== "spectator";
+
+  this.sockets[userId]?.disconnect(true);
+  this.sockets[userId] = socket;
+  endStream(userId);
+
+  socket.emit("userId", userId);
+  socket.join("handRoom");
+
+  broadcastConnectedUsers(this.sockets, this.io);
+  const initialPiecesProps = getPiecesProps();
   socket.emit("pieces", initialPiecesProps);
 
-  socket.on("handData", (data) => {
-    const otherSockets = Object.entries(this.sockets)
-      .filter(([socketId]) => socketId !== socket.handshake.query.env)
-      .map(([_, s]) => s);
-
-    sendHandDataToSockets(otherSockets, data);
-  });
-
-  function saveLog(log) {
-    try {
-      streams[socket.handshake.query.env].write(
-        JSON.stringify({ log, serverState: getServerState() }) + "\n"
-      );
-    } catch (err) {
-      console.log(
-        "log write failed!",
-        streams.length,
-        Object.keys(streams),
-        streams[socket.handshake.query.env]
-      );
-      console.error(err);
-    }
-  }
-
-  function isEmitDisposable(data, curr) {
-    let isDisposable = false;
-    const incomingPinchIsOlder =
-      curr?.pinchStart && data.pinchStart < curr.pinchStart;
-    const pinchStartOverlap =
-      curr?.pinchStart && data.pinchStart === curr.pinchStart;
-    if (incomingPinchIsOlder || pinchStartOverlap) {
-      if (incomingPinchIsOlder) {
-        saveLog({
-          isDisposable: true,
-          reason: "incomingPinchIsOlder",
-          data,
-          curr,
-        });
-        isDisposable = true;
-      }
-      const incomingPinchHasDifferentUserId =
-        curr?.userId && data.userId !== curr.userId;
-      if (pinchStartOverlap && incomingPinchHasDifferentUserId) {
-        saveLog({
-          isDisposable: true,
-          reason: "pinchStartOverlap",
-          data,
-          curr,
-        });
-        isDisposable = true;
-      }
-    }
-    return isDisposable;
-  }
-
-  socket.on("pinchData", (data) => {
-    const index = state.piecesTransforms.findIndex((p) => p.name === data.name);
-    const curr = state.piecesTransforms[index];
-    if (isEmitDisposable(data, curr)) {
-      return;
-    }
-
-    updatePiecesProps(data, index);
-
-    socket.to("handRoom").emit("pinchData", data);
-  });
-
-  socket.on("pieceStateData", (data) => {
-    socket.to("handRoom").emit("pieceStateData", data);
-  });
+  socket.on("handData", (d) => handleHandData(d, userId, this.sockets));
+  socket.on("pinchData", (d) => handlePinchData(d, socket));
+  socket.on("pieceStateData", (d) => handlePieceStateData(d, socket));
 
   if (notSpectator) {
-    streams[socket.handshake.query.env] = createWriteStream(
-      `${socket.handshake.query.env}.txt`,
-      { flags: "a" }
-    );
+    createStream(userId);
 
     socket.on("log", (log) => {
-      saveLog(log);
+      saveLog(log, userId);
     });
 
-    clearInterval(intervals[socket.handshake.query.env]);
-    intervals[socket.handshake.query.env] = setInterval(() => {
-      saveLog({ stateOnly: true });
+    clearInterval(intervals[userId]);
+    intervals[userId] = setInterval(() => {
+      saveLog({ stateOnly: true }, userId);
     }, 3000);
   }
 }
