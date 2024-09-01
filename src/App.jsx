@@ -1,16 +1,16 @@
 import * as React from "react";
 import PropTypes from "prop-types";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
+// import Tabs from "@mui/material/Tabs";
+// import Tab from "@mui/material/Tab";
 import Box from "@mui/material/Box";
 import Slider from "@mui/material/Slider";
 import PowerIcon from "@mui/icons-material/Power";
 import PowerOffIcon from "@mui/icons-material/PowerOff";
-import Divider from "@mui/material/Divider";
+// import Divider from "@mui/material/Divider";
 import { Button } from "@mui/material";
 
 import useSocket, {
-  handViews,
+  // handViews,
   useConnectedUsers,
   useFakeUsers,
   useInlineUsers,
@@ -18,8 +18,9 @@ import useSocket, {
   useLog,
 } from "@/stores/socket";
 import Pizza from "@/components/Pizza";
-import PiecesProps, { blobJoint } from "@/components/PiecesProps";
-import createNewLevelPieces from "@/stores/helpers/createNewLevelPieces";
+import PiecesProps/* , { blobJoint } */ from "@/components/PiecesProps";
+// import createNewHypergonomicOrientationLevel from "@/stores/helpers/createNewHypergonomicOrientationLevel";
+import Overview from "./components/Overview";
 
 function TabPanel(props) {
   const { children, value, index } = props;
@@ -43,47 +44,83 @@ TabPanel.propTypes = {
 
 export default function BasicTabs() {
   const socketReady = useSocket((state) => state.socketReady);
+  const currentTransport = useSocket((state) => state.currentTransport);
   const socket = useSocket((state) => state.socket);
   const handView = useSocket((state) => state.handView);
-  const sethandView = useSocket((state) => state.sethandView);
+  // const sethandView = useSocket((state) => state.sethandView);
   const connectedUsers = useConnectedUsers();
   const fakeUsers = useFakeUsers();
   const inlineUsers = useInlineUsers();
   const xrUsers = useXRUsers();
   const users = useSocket((state) => state.users);
+  // const setUsers = useSocket((state) => state.setUsers);
   const permutations = useSocket((state) => state.permutations);
   const setFakeUsers = useSocket((state) => state.setFakeUsers);
   const permutationIndex = useSocket((state) => state.permutationIndex);
-  const fidelity = useSocket((state) => state.fidelity);
+  // const fidelity = useSocket((state) => state.fidelity);
+  const objectOrientation = useSocket((state) => state.objectOrientation);
   const setAndEmit = useSocket((state) => state.setAndEmit);
   const log = useLog();
-  const variantIndex = handViews.findIndex((v) => v === handView);
+  // const variantIndex = handViews.findIndex((v) => v === handView);
   const filter = handView !== "Pizza" ? "grayscale" : "";
 
   const handleReset = () => {
-    log({ type: "resetButtonClick" });
+    // log({ type: "resetButtonClick" });
     socket.emit("reset");
   };
 
   const handlePermutation = (permutation, index) => {
     log({ type: "permutationButtonClick", permutation, index });
     setAndEmit("permutationIndex", index);
-    setAndEmit("fidelity", {
-      ...permutation.fidelity[0],
-      blobJoint: blobJoint[9],
-    });
+    // setAndEmit("fidelity", {
+    //   ...permutation.fidelity[0],
+    //   blobJoint: blobJoint[9],
+    // });
   };
-  const handleFidelity = (level) => {
-    log({ type: "fidelityButtonClick", level });
-    setAndEmit("fidelity", { level, blobJoint: blobJoint[9] });
+  // const handleFidelity = (level) => {
+  //   log({ type: "fidelityButtonClick", level });
+  //   setAndEmit("fidelity", { level, blobJoint: blobJoint[9] });
+  // };
+  const handleObjectOrientation = (level) => {
+    log({ type: "objectOrientationButtonClick", level });
+    setAndEmit("objectOrientation", { level });
   };
+  // const handleToggleUserType = () => {
+  //   log({ type: "userTypeToggleButtonClick" });
+  //   setUsers(
+  //     users.map((user) => {
+  //       let type = user.userId;
+  //       if (user.type === "giver") {
+  //         type = "receiver";
+  //       } else if (user.type === "receiver") {
+  //         type = "giver";
+  //       }
+  //       return { ...user, type };
+  //     })
+  //   );
+  // };
+  // const handleUserTypeReset = () => {
+  //   log({ type: "userTypeResetButtonClick" });
+  //   setUsers(
+  //     users.map((user) => {
+  //       let type = user.userId;
+  //       if (user.userId === "VR1") {
+  //         type = "giver";
+  //       } else if (user.userId === "VR2") {
+  //         type = "receiver";
+  //       }
+  //       return { ...user, type };
+  //     })
+  //   );
+  // };
 
-  const handleNewLevel = () => {
-    log({ type: "newLevelButtonClick" });
-    socket.emit("reset");
-    const newPieces = createNewLevelPieces();
-    setAndEmit("pieces", newPieces);
-  };
+  // const handleNewLevel = () => {
+  //   log({ type: "newLevelButtonClick" });
+  //   socket.emit("newLevelButtonClick");
+  //   socket.emit("reset");
+  //   // const newPieces = createNewHypergonomicOrientationLevel();
+  //   // setAndEmit("pieces", newPieces);
+  // };
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -97,18 +134,20 @@ export default function BasicTabs() {
         <PowerOffIcon color="error" />
       )}
       <br />
-      <Box sx={{ p: 5, display: "flex", justifyContent: "space-evenly" }}>
-        <Button onClick={handleNewLevel} variant="contained">
+      Current Transport Type: {currentTransport}
+      <Box sx={{ p: 2, display: "flex" /* justifyContent: "space-evenly" */ }}>
+        {/* <Button sx={{ mx: 1 }} onClick={handleNewLevel} variant="contained">
           New Puzzle
-        </Button>
-        <Button color="error" onClick={handleReset} variant="contained">
+        </Button> */}
+        <Button sx={{ mx: 1 }} color="error" onClick={handleReset} variant="contained">
           Reset Puzzle
         </Button>
       </Box>
-      <Box sx={{ p: 5, display: "flex", justifyContent: "space-evenly" }}>
+      <Box sx={{ p: 2, display: "flex" /* justifyContent: "space-evenly" */ }}>
         {permutations?.map((perm, index) => {
           return (
             <Button
+              sx={{ mx: 1 }}
               key={`perm-${perm.__comment__order}`}
               onClick={() => handlePermutation(perm, index)}
               variant={permutationIndex === index ? "contained" : "outlined"}
@@ -116,7 +155,23 @@ export default function BasicTabs() {
           );
         })}
       </Box>
-      <Box sx={{ p: 5, display: "flex", justifyContent: "space-evenly" }}>
+      <Box sx={{ p: 2, display: "flex" }}>
+        {/* <Button
+          onClick={handleToggleUserType}
+          variant="contained"
+          sx={{ mx: 1 }}
+        >
+          Toggle User Types (swap Giver/Receiver)
+        </Button>
+        <Button
+          onClick={handleUserTypeReset}
+          variant="contained"
+          sx={{ mx: 1 }}
+        >
+          Reset User Types
+        </Button> */}
+      </Box>
+      {/* <Box sx={{ p: 2, display: "flex", justifyContent: "space-evenly" }}>
         {typeof permutationIndex === "number" &&
           permutations?.[permutationIndex]?.fidelity?.map((f) => {
             return (
@@ -127,6 +182,23 @@ export default function BasicTabs() {
               >{`Fidelity: ${f.level}`}</Button>
             );
           })}
+      </Box> */}
+      <Box sx={{ p: 2, display: "flex" /* justifyContent: "space-evenly" */ }}>
+        {typeof permutationIndex === "number" &&
+          permutations?.[permutationIndex]?.objectOrientation?.map((f) => {
+            return (
+              <Button
+                sx={{ mx: 1 }}
+                key={`objectOrientation-${f.level}`}
+                onClick={() => handleObjectOrientation(f.level)}
+                variant={
+                  f.level === objectOrientation?.level
+                    ? "contained"
+                    : "outlined"
+                }
+              >{`Object Orientation: ${f.level}`}</Button>
+            );
+          })}
       </Box>
       {/* <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
         <Tabs value={variantIndex} onChange={sethandView}>
@@ -135,7 +207,7 @@ export default function BasicTabs() {
           })}
         </Tabs>
       </Box> */}
-      <div className={`px-16 ${filter} flex w-full`}>
+      <div className={`px-16 ${filter} flex w-full hidden`}>
         <div className={`px-16 inline-block`}>Fake Users:</div>
         <Slider
           defaultValue={2}
@@ -158,6 +230,7 @@ export default function BasicTabs() {
         <div className={`pl-16 pt-32 inline-block`}>Pizza Positions:</div>
         <Pizza />
       </div>
+      <Overview />
       <PiecesProps />
     </Box>
   );

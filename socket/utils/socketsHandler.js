@@ -2,6 +2,8 @@ import { Matrix4, Quaternion, Vector3 } from "three";
 
 import { createStream, endStream, saveLog } from "./logging.js";
 import state from "./state.js";
+import { showLogs } from "../../src/components/const.js";
+
 const intervals = {};
 
 export async function onDisconnect(socket, reason) {
@@ -20,7 +22,7 @@ export function sendHandDataToSockets(sockets, data) {
   });
 }
 
-function broadcastConnectedUsers(sockets, io) {
+export function broadcastConnectedUsers(sockets, io) {
   const connectedUsers = Object.values(sockets).map((socket) => {
     return {
       socketId: socket.id,
@@ -30,6 +32,7 @@ function broadcastConnectedUsers(sockets, io) {
   });
   io.emit("level", state.level);
   io.emit("fidelity", state.fidelity);
+  io.emit("objectOrientation", state.objectOrientation);
   io.emit("connectedUsers", connectedUsers);
   io.of("/admin").emit("connectedUsers", connectedUsers);
 }
@@ -49,7 +52,7 @@ function isEmitDisposable(pinchData, pinchCurr) {
           pinchData,
           pinchCurr,
         },
-        pinchData.name
+        pinchData.userId
       );
       isDisposable = true;
     }
@@ -63,7 +66,7 @@ function isEmitDisposable(pinchData, pinchCurr) {
           pinchData,
           pinchCurr,
         },
-        pinchData.name
+        pinchData.userId
       );
       isDisposable = true;
     }
@@ -79,30 +82,41 @@ const handleHandData = (data, userId, sockets) => {
   sendHandDataToSockets(otherSockets, data);
 };
 
+const handleViewerData = (data, socket) => {
+  socket.to("handRoom").emit("viewerData", data);
+  // const userId = socket.handshake.query.env;
+  // saveLog({ type: "viewerData", ...data }, userId);
+};
+
 const handlePinchData = (pinchData, socket) => {
-  const pieceIndex = state.pieces.findIndex((p) => p.name === pinchData.name);
-  const pieceCurr = state.pieces[pieceIndex];
+  // const pieceIndex = state.pieces.findIndex((p) => p.name === pinchData.name);
+  const pieceCurr = state.pieces[0]?.pinchData;
+  console.log(pieceCurr, pinchData, isEmitDisposable(pinchData, pieceCurr));
   if (isEmitDisposable(pinchData, pieceCurr)) {
     return;
   }
 
   const newPieces = [...state.pieces];
-  newPieces[pieceIndex].pinchData = pinchData;
+  newPieces[0].pinchData = pinchData;
   state.pieces = newPieces;
   socket.to("handRoom").emit("pinchData", pinchData);
+  const userId = socket.handshake.query.env;
+  saveLog({ type: "pinchData", ...pinchData }, userId);
 };
 
 const handlePieceStateData = (pieceStateData, socket) => {
-  const pieceIndex = state.pieces.findIndex((p) => p.name === pieceStateData.name);
-  const pieceCurr = state.pieces[pieceIndex];
+  // const pieceIndex = state.pieces.findIndex(
+  //   (p) => p.name === pieceStateData.name
+  // );
+  const pieceCurr = state.pieces[0];
   const newPieces = [...state.pieces];
-  newPieces[pieceIndex] = {
+  newPieces[0] = {
     ...pieceCurr,
     ...pieceStateData,
-  }
+  };
   state.pieces = newPieces;
   socket.to("handRoom").emit("pieceStateData", pieceStateData);
-}
+};
 
 const getPiecesProps = () => {
   return state.pieces.map((piece) => {
@@ -154,6 +168,7 @@ export async function onConnect(socket) {
   socket.emit("pieces", initialPiecesProps);
 
   socket.on("handData", (d) => handleHandData(d, userId, this.sockets));
+  socket.on("viewerData", (d) => handleViewerData(d, socket));
   socket.on("pinchData", (d) => handlePinchData(d, socket));
   socket.on("pieceStateData", (d) => handlePieceStateData(d, socket));
 
@@ -162,6 +177,9 @@ export async function onConnect(socket) {
 
     socket.on("log", (log) => {
       saveLog(log, userId);
+      if (showLogs.includes(log.type)) {
+        this.io.of("/admin").emit(log.type, { ...log, userId });
+      }
     });
 
     clearInterval(intervals[userId]);

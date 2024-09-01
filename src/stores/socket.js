@@ -8,6 +8,7 @@ import throttle from "lodash.throttle";
 
 import socket from "@/stores/socketConnection";
 import { convenientColors } from "@/stores/helpers/createNewLevelPieces";
+import Stats from "stats-gl";
 
 export const handViews = ["Pizza", "Ego"];
 
@@ -39,8 +40,9 @@ function getFakeUsers(users) {
   return users.filter(({ socketId }) => !socketId);
 }
 
-let firstFakeSendTime;
+// let firstFakeSendTime;
 const initialState = {
+  currentTransport: undefined,
   socketReady: false,
   handView: handViews[0],
   users: [],
@@ -48,6 +50,7 @@ const initialState = {
   socket: undefined,
   pieces: [],
   fidelity: { level: "virtual", blobJoint: "index-finger-tip" },
+  objectOrientation: { level: "baseline" },
   permutations: [],
   permutationIndex: [],
   debug: {
@@ -60,10 +63,11 @@ const initialState = {
     gizmo: false,
     hands: false,
     piecesPos: false,
-    // pieces: false,
+    pieces: false,
     collide: false,
     singlePlayer: false,
-    pizzaRadius: 0.5,
+    showBvhs: false,
+    pizzaRadius: 0.7,
   },
 };
 
@@ -73,6 +77,18 @@ const mutations = (set, get) => {
     //   numPoints: users.length,
     // });
     const newUsers = users.map((user, index) => {
+      let type;
+      switch (user.userId) {
+        case "VR1":
+          type = user.type ? user.type : "giver";
+          break;
+        case "VR2":
+          type = user.type ? user.type : "receiver";
+          break;
+        default:
+          type = user.userId;
+          break;
+      }
       return {
         // color: rgb(
         //   formatHex({
@@ -82,8 +98,11 @@ const mutations = (set, get) => {
         //     l: poline.colors[index][2],
         //   })
         // ),
-        color: convenientColors[index],
+        color:
+          user.userId === "VR1" ? convenientColors[0] : convenientColors[1],
         ...user,
+        type,
+        stats: user.stats ? user.stats : new Stats({ minimal: true }),
       };
     });
     set({ users: newUsers });
@@ -94,6 +113,7 @@ const mutations = (set, get) => {
 
   function updateConnectedUsers(connectedUsers) {
     const oldUsers = get().users;
+
     const newConnectedUsers = connectedUsers.filter(
       ({ socketId }) =>
         !oldUsers.map(({ socketId }) => socketId).includes(socketId)
@@ -103,7 +123,7 @@ const mutations = (set, get) => {
         ({ socketId }) => socketId === oldUser.socketId
       );
       if (user) {
-        prev.push(user);
+        prev.push({ ...oldUser, ...user });
       }
       return prev;
     }, []);
@@ -112,6 +132,7 @@ const mutations = (set, get) => {
       newConnectedUsers,
       oldFakeUsers
     );
+    // console.log(newUsers.map((u) => u.personId));
     setUsers(newUsers);
   }
 
@@ -135,6 +156,10 @@ const mutations = (set, get) => {
       set({ socketReady: false });
     })
     .on("connectedUsers", updateConnectedUsers);
+
+  socket.io.engine.on("upgrade", (transport) => {
+    set({ currentTransport: transport.name });
+  });
 
   // fetch("./handData/recorded-03-10-23.json")
   // fetch("./handData/recorded-04-10-23-morning.json")
@@ -207,6 +232,7 @@ const mutations = (set, get) => {
 
   return {
     socket,
+    currentTransport: socket.io.engine.transport.name,
     setUsers,
     setFakeUsers(event, newFakeUsers) {
       updateFakeUsers(newFakeUsers);
@@ -231,6 +257,14 @@ const mutations = (set, get) => {
     },
     log(log) {
       socket.emit("log", { ...log, timestamp: Date.now() });
+    },
+    setPersonId(userId, personId) {
+      const { users } = get();
+      const newUsers = users.map((u) => {
+        u.personId = u.userId === userId ? personId : u.personId;
+        return u;
+      });
+      setUsers(newUsers);
     },
   };
 };

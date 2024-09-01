@@ -1,0 +1,162 @@
+[
+  {
+    "color": {
+      "r": 0.5019607843137255,
+      "g": 0,
+      "b": 0
+    },
+    "gltfPath": "models/pieces/5-cylinder-5.gltf",
+    "gltfPathGoal": "models/pieces/5-cylinder-5-goal.gltf",
+    "startIndex": 0,
+    "goalIndex": 0,
+    "env": "AR",
+    "type": "give",
+    "render": true,
+    "visible": true,
+    "name": "crate-AR-0",
+    "gltfPathDebug": "models/debug-crates/AR-give.gltf",
+    "scale": 0.05,
+    "key": "crate-AR-0-1693306767888",
+    "trash": false,
+    "position": [-0.35, -0.25, 0.3],
+    "rotation": [0.4188790204786391, 0.4537856055185257, 0.19198621771937624],
+    "positionGoal": [-0.35, -0.35, -0.3],
+    "rotationGoal": [0, 0, 0]
+  },
+  {
+    "color": {
+      "r": 0,
+      "g": 0,
+      "b": 0.5019607843137255
+    },
+    "gltfPath": "models/pieces/3-cone-half.gltf",
+    "gltfPathGoal": "models/pieces/3-cone-half-goal.gltf",
+    "startIndex": 1,
+    "goalIndex": 1,
+    "env": "AR",
+    "type": "give",
+    "render": true,
+    "visible": true,
+    "name": "crate-AR-1",
+    "gltfPathDebug": "models/debug-crates/AR-give.gltf",
+    "scale": 0.05,
+    "key": "crate-AR-1-1693306767888",
+    "trash": true,
+    "position": [0, -0.25, 0.3],
+    "rotation": [
+      -0.3839724354387525, -0.17453292519943295, 0.03490658503988659
+    ],
+    "positionGoal": [0, -0.35, -0.3],
+    "rotationGoal": [0, 0, 0]
+  },
+  {
+    "color": {
+      "r": 0.9607843137254902,
+      "g": 0.5098039215686274,
+      "b": 0.18823529411764706
+    },
+    "gltfPath": "models/pieces/4-cone-quarter.gltf",
+    "gltfPathGoal": "models/pieces/4-cone-quarter-goal.gltf",
+    "startIndex": 2,
+    "goalIndex": 0,
+    "env": "AR",
+    "type": "self",
+    "render": true,
+    "visible": true,
+    "name": "crate-AR-2",
+    "gltfPathDebug": "models/debug-crates/AR-self.gltf",
+    "scale": 0.05,
+    "key": "crate-AR-2-1693306767888",
+    "trash": false,
+    "position": [0.35, -0.25, 0.3],
+    "rotation": [
+      -0.06981317007977318, -0.2792526803190927, 0.15707963267948966
+    ],
+    "positionGoal": [-0.35, -0.35, 0.3],
+    "rotationGoal": [0, 0, 0]
+  },
+  {
+    "color": {
+      "r": 1,
+      "g": 0.8823529411764706,
+      "b": 0.09803921568627451
+    },
+    "gltfPath": "models/pieces/1-cone-4.gltf",
+    "gltfPathGoal": "models/pieces/1-cone-4-goal.gltf",
+    "startIndex": 2,
+    "goalIndex": 1,
+    "env": "VR",
+    "type": "give",
+    "render": true,
+    "visible": true,
+    "name": "crate-VR-2",
+    "gltfPathDebug": "models/debug-crates/VR-give.gltf",
+    "scale": 0.05,
+    "key": "crate-VR-2-1693306767888",
+    "trash": false,
+    "position": [
+      0.35,
+      -0.25,
+      -0.3
+    ],
+    "rotation": [
+      -0.29670597283903605, 0.05235987755982989, -0.15707963267948966
+    ],
+    "positionGoal": [0, -0.35, 0.3],
+    "rotationGoal": [0, 0, 0]
+  },
+  {
+    "color": {
+      "r": 0,
+      "g": 0.5098039215686274,
+      "b": 0.7843137254901961
+    },
+    "orientToward": "localHand",
+    "gltfPath": "models/pieces/6-cylinder-60.gltf",
+    "gltfPathGoal": "models/pieces/6-cylinder-60-goal.gltf",
+    "startIndex": 1,
+    "goalIndex": 2,
+    "env": "VR",
+    "type": "self",
+    "render": true,
+    "visible": true,
+    "name": "crate-VR-1",
+    "gltfPathDebug": "models/debug-crates/VR-self.gltf",
+    "scale": 0.05,
+    "key": "crate-VR-1-1693306767888",
+    "trash": false,
+    "position": [0, -0.25, -0.3],
+    "rotation": [
+      -0.5235987755982988, -0.017453292519943295, 0.5934119456780721
+    ],
+    "positionGoal": [0.35, -0.35, -0.3],
+    "rotationGoal": [0, 0, 0]
+  },
+  {
+    "color": {
+      "r": 0.8627450980392157,
+      "g": 0.7450980392156863,
+      "b": 1
+    },
+    "orientToward": "remoteHand",
+    "gltfPath": "models/pieces/2-cone-5.gltf",
+    "gltfPathGoal": "models/pieces/2-cone-5-goal.gltf",
+    "startIndex": 0,
+    "goalIndex": 2,
+    "env": "VR",
+    "type": "give",
+    "render": true,
+    "visible": true,
+    "name": "crate-VR-0",
+    "gltfPathDebug": "models/debug-crates/VR-give.gltf",
+    "scale": 0.05,
+    "key": "crate-VR-0-1693306767888",
+    "trash": true,
+    "position": [-0.35, -0.25, -0.3],
+    "rotation": [
+      -0.29670597283903605, -0.05235987755982989, 0.24434609527920614
+    ],
+    "positionGoal": [0.35, -0.35, 0.3],
+    "rotationGoal": [0, 0, 0]
+  }
+]
