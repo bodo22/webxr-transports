@@ -91,7 +91,6 @@ const handleViewerData = (data, socket) => {
 const handlePinchData = (pinchData, socket) => {
   // const pieceIndex = state.pieces.findIndex((p) => p.name === pinchData.name);
   const pieceCurr = state.pieces[0]?.pinchData;
-  console.log(pieceCurr, pinchData, isEmitDisposable(pinchData, pieceCurr));
   if (isEmitDisposable(pinchData, pieceCurr)) {
     return;
   }
